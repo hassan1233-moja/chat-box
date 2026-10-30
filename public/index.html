@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Real-time Chat App with Mentions</title>
+        <style>
+        body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .container { width: 100%; max-width: 400px; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .hidden { display: none !important; }
+        input, button { width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #0056b3; }
+        .switch-text { text-align: center; margin-top: 15px; cursor: pointer; color: #007bff; font-size: 14px; }
+        
+        /* চ্যাট ও সাইডবার লেআউট */
+        #chat-layout { display: flex; width: 750px; height: 520px; background: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; }
+        #sidebar { width: 220px; background: #2c3e50; color: white; padding: 15px; overflow-y: auto; }
+        #sidebar h3 { font-size: 16px; margin-top: 0; border-bottom: 1px solid #4e657a; padding-bottom: 8px; }
+        #user-list { list-style: none; padding: 0; margin: 0; }
+        #user-list li { padding: 6px 10px; margin-bottom: 5px; background: #34495e; border-radius: 4px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        #user-list li:hover { background: #1abc9c; }
+        
+        .chat-main { flex-grow: 1; display: flex; flex-direction: column; padding: 15px; }
+        #chat-box { flex-grow: 1; min-height: 0; border: 1px solid #ddd; border-radius: 5px; overflow-y: auto; padding: 10px; margin-bottom: 15px; background: #fafafa; }
+        
+        .message { margin-bottom: 10px; padding: 8px 12px; border-radius: 4px; background: #e1ffc7; word-break: break-word; }
+        /* কেউ ট্যাগ করলে মেসেজের ডিজাইন হাইলাইট হবে */
+        .message.mentioned { background: #ffeeba; border-left: 4px solid #ffc107; }
+        
+        #form { display: flex; gap: 10px; }
+        #input { flex-grow: 1; margin-top: 0; }
+    </style>
+    </head>
+    <body>
+
+        <!-- ১. অথেন্টিকেশন (লগইন / রেজিস্ট্রেশন) সেকশন -->
+        <div id="auth-container" class="container">
+            <h2 id="form-title" style="text-align: center;">Login 🔑</h2>
+
+            <form id="auth-form">
+                <input type="text" id="username" placeholder="Username"
+                    class="hidden" />
+                <input type="email" id="email" placeholder="Email Address"
+                    required />
+                <input type="password" id="password" placeholder="Password"
+                    required />
+                <button type="submit" id="auth-btn">Login</button>
+            </form>
+
+            <div class="switch-text" id="switch-btn">অ্যাকাউন্ট নেই? সাইন আপ
+                করুন</div>
+            <div id="error-msg"
+                style="color: red; text-align: center; margin-top: 10px; font-size: 14px;"></div>
+        </div>
+
+        <!-- ২. মূল চ্যাট রুম ও সাইডবার সেকশন (লগইন করার পর দেখাবে) -->
+        <div id="chat-layout" class="hidden">
+            <!-- অনলাইন ইউজারদের সাইডবার -->
+            <div id="sidebar">
+                <h3>🟢 Online (<span id="online-count">0</span>)</h3>
+                <ul id="user-list"></ul>
+                <div
+                    style="font-size: 11px; color: #a5b1c2; margin-top: 15px;">💡
+                    নাম ট্যাগ করতে ইউজারের নামের ওপর ক্লিক করুন।</div>
+            </div>
+
+            <!-- চ্যাট উইন্ডো -->
+            <div class="chat-main">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="margin: 0;">Chat Room 💬</h3>
+                    <span style="font-size: 13px; color: #666;">User: <b
+                            id="user-display"></b></span>
+                </div>
+
+                <div id="chat-box"></div>
+
+                <form id="form">
+                    <input id="input" autocomplete="off"
+                        placeholder="Type a message or click user to tag..."
+                        required />
+                    <button style="width: auto;">Send</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Socket.io ক্লায়েন্ট স্ক্রিপ্ট -->
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+        const authContainer = document.getElementById('auth-container');
+        const chatLayout = document.getElementById('chat-layout');
+        const authForm = document.getElementById('auth-form');
+        const authBtn = document.getElementById('auth-btn');
+        const formTitle = document.getElementById('form-title');
+        const usernameInput = document.getElementById('username');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const switchBtn = document.getElementById('switch-btn');
+        const errorMsg = document.getElementById('error-msg');
+        const userDisplay = document.getElementById('user-display');
+
+        let isLoginMode = true;
+        let socket; // গ্লোবাল সকেট ভ্যারিয়েবল যাতে ডুপ্লিকেট কানেকশন তৈরি না হয়
+
+        // লগইন/রেজিস্ট্রেশন সুইচ করার লজিক
+        switchBtn.addEventListener('click', () => {
+            isLoginMode = !isLoginMode;
+            if (isLoginMode) {
+                formTitle.textContent = 'Login 🔑';
+                authBtn.textContent = 'Login';
+                usernameInput.classList.add('hidden');
+                switchBtn.textContent = 'অ্যাকাউন্ট নেই? সাইন আপ করুন';
+            } else {
+                formTitle.textContent = 'Sign Up 📝';
+                authBtn.textContent = 'Register';
+                usernameInput.classList.remove('hidden');
+                switchBtn.textContent = 'ইতিমধ্যে অ্যাকাউন্ট আছে? লগইন করুন';
+            }
+            errorMsg.textContent = '';
+        });
+
+        // ফর্ম সাবমিট হ্যান্ডেলার
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMsg.textContent = '';
+
+            const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
+            const payload = { email: emailInput.value, password: passwordInput.value };
+            if (!isLoginMode) payload.username = usernameInput.value;
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'কিছু একটা সমস্যা হয়েছে!');
+
+                if (isLoginMode) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('username', data.user.username);
+                    showChatRoom(data.user.username);
+                } else {
+                    alert('রেজিস্ট্রেশন সফল হয়েছে! এবার লগইন করুন।');
+                    switchBtn.click();
+                }
+            } catch (err) {
+                errorMsg.textContent = err.message;
+            }
+        });
+
+        // চ্যাট রুম দেখানোর ফাংশন
+        function showChatRoom(username) {
+            authContainer.classList.add('hidden');
+            chatLayout.classList.remove('hidden');
+            userDisplay.textContent = username;
+            
+            // সকেট একবারই ইনিশিয়ালাইজ করা
+            if (!socket) {
+                socket = io();
+            }
+
+            initSocketChat(username);
+        }
+
+        // Socket.io চ্যাট ও ট্যাগিং লজিক
+        function initSocketChat(username) {
+            const form = document.getElementById('form');
+            const input = document.getElementById('input');
+            const chatBox = document.getElementById('chat-box');
+            const userList = document.getElementById('user-list');
+            const onlineCount = document.getElementById('online-count');
+
+            // সকেট সফলভাবে কানেক্ট হওয়ার পরই কেবল সার্ভারে নাম পাঠানো হবে
+            socket.on('connect', () => {
+                console.log('🟢 Socket Connected, emitting join_user for:', username);
+                socket.emit('join_user', username);
+                socket.emit('load_old_messages');
+            });
+
+            // যদি সকেট ইতিমধ্যে কানেক্টেড থাকে
+            if (socket.connected) {
+                socket.emit('join_user', username);
+                socket.emit('load_old_messages');
+            }
+
+            // পুরোনো ইভেন্টের ডুপ্লিকেট লিসেনার এড়াতে
+            socket.off('update_user_list');
+            socket.off('load_old_messages');
+            socket.off('chat message');
+
+            // অনলাইন ইউজার লিস্ট আপডেট হলে তা রেন্ডার করা
+            socket.on('update_user_list', (users) => {
+                console.log('📥 Server থেকে পাওয়া user list:', users);
+                
+                userList.innerHTML = '';
+                onlineCount.textContent = users.length;
+
+                users.forEach((user) => {
+                    const li = document.createElement('li');
+                    li.textContent = user;
+                    li.addEventListener('click', () => {
+                        input.value = `@${user} ` + input.value;
+                        input.focus();
+                    });
+                    userList.appendChild(li);
+                });
+            });
+
+            // ডাটাবেস থেকে পুরোনো মেসেজগুলো লোড করে দেখানো
+            socket.on('load_old_messages', (messages) => {
+                chatBox.innerHTML = ''; 
+                messages.forEach((msg) => {
+                    const item = document.createElement('div');
+                    item.classList.add('message');
+                    if (msg.message.includes(`@${username}`)) {
+                        item.classList.add('mentioned');
+                    }
+                    item.innerHTML = `<b>${msg.sender}:</b> ${msg.message}`;
+                    chatBox.appendChild(item);
+                });
+                chatBox.scrollTop = chatBox.scrollHeight;
+            });
+
+            // মেসেজ পাঠানো
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                console.log('Send button clicked! Input value:', input.value);
+                
+                if (input.value.trim() !== '') {
+                    const messageData = {
+                        sender: username,
+                        text: input.value
+                    };
+                    console.log('Emitting chat message:', messageData);
+                    socket.emit('chat message', messageData);
+                    input.value = '';
+                }
+            });
+
+            // নতুন রিয়েল-टाइम মেসেজ রিসিভ করা
+            socket.on('chat message', (data) => {
+                console.log('📥 Server theke paowa chat message:', data); // এটি কনসোলে প্রিন্ট হবে
+                
+                const item = document.createElement('div');
+                item.classList.add('message');
+                
+                if (data.text && data.text.includes(`@${username}`)) {
+                    item.classList.add('mentioned');
+                }
+
+                item.innerHTML = `<b>${data.sender}:</b> ${data.text}`;
+                chatBox.appendChild(item);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            });
+
+        }
+
+        // পেজ রিফ্রেশ হলে আগের লগইন স্টেট ধরে রাখা
+        window.onload = () => {
+            const savedUsername = localStorage.getItem('username');
+            if (savedUsername) {
+                showChatRoom(savedUsername);
+            }
+        };
+    </script>
+    </body>
+</html>
