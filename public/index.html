@@ -4,6 +4,8 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Real-time Chat App with Mentions</title>
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
         body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; height: 100vh; }
         .container { width: 100%; max-width: 400px; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
@@ -62,25 +64,32 @@
                 <ul id="user-list"></ul>
                 <div
                     style="font-size: 11px; color: #a5b1c2; margin-top: 15px;">💡
-                    নাম ট্যাগ করতে ইউজারের নামের ওপর ক্লিক করুন।</div>
+                    click a user name for tag.</div>
             </div>
 
             <!-- চ্যাট উইন্ডো -->
             <div class="chat-main">
                 <div
                     style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <h3 style="margin: 0;">Chat Room 💬</h3>
-                    <span style="font-size: 13px; color: #666;">User: <b
+                    <h3 style="margin: 0;">Cha<span
+                            style="color:#ffc107; gap: 0px;">tex</span></h3>
+
+                    <span style="font-size: 13px; color: #b479f3;">User: <b
                             id="user-display"></b></span>
                 </div>
 
                 <div id="chat-box"></div>
-
-                <form id="form">
+                <form id="form"
+                    style="display: flex; gap: 10px; align-items: flex-start; margin: 0;">
                     <input id="input" autocomplete="off"
                         placeholder="Type a message or click user to tag..."
-                        required />
-                    <button style="width: auto;">Send</button>
+                        required
+                        style="flex: 1; height: 42px; padding: 0 15px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; outline: none; box-sizing: border-box; margin: 0;" />
+
+                    <button type="submit"
+                        style="width: 45px; height: 42px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-sizing: border-box; padding: 0; margin: 0;">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
                 </form>
             </div>
         </div>
