@@ -1,97 +1,255 @@
-require('dotenv').config(); // .env ফাইল থেকে গোপন ভ্যারিয়েবল লোড করার জন্য
+require('dotenv').config();
 const express = require('express');
-const http = require('http'); // Node.js এর বিল্ট-ইন HTTP সার্ভার মডিউল
-const { Server } = require('socket.io'); // Socket.io থেকে Server ক্লাসটি নিয়ে আসা হলো
-const cors = require('cors'); // CORS সিকিউরিটি পলিসি হ্যান্ডেল করার জন্য
-const connectDB = require('./config/db'); // আমাদের তৈরি করা ডাটাবেস কানেকশন ফাইল
-const authRoutes = require('./routes/authRoutes');
-const Message = require('./models/Message'); // মেসেজ মডেল
+const http = require('http');
+const { Server } = require('socket.io');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const User = require('./models/User');
+const Message = require('./models/Message');
 
 const app = express();
-const server = http.createServer(app); // Express অ্যাপ দিয়ে একটি HTTP সার্ভার তৈরি করা হলো
-const io = new Server(server); // HTTP সার্ভারের উপর Socket.io চালু করা হলো
+const server = http.createServer(app);
+const io = new Server(server);
 
-// Database Connect Call
-connectDB();
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Middleware
-app.use(cors()); // ফ্রন্টএন্ড ও ব্যাকএন্ড সংযোগ সহজ করার জন্য
-app.use(express.json()); // ফ্রন্টএন্ড থেকে পাঠানো JSON ডেটা পড়ার জন্য
-app.use(express.static('public')); // 'public' ফোল্ডারের ফাইলগুলো ব্রাউজারে দেখানোর জন্য
+// আপলোড ফোল্ডার না থাকলে তৈরি করে নেওয়া
+if (!fs.existsSync('./uploads')) {
+    fs.existsSync('./uploads') || fs.mkdirSync('./uploads');
+}
 
-// Auth Routes যুক্ত করা
-app.use('/api/auth', authRoutes);
+// Multer কনফিগারেশন (ফাইল, ছবি ও ভয়েস নোট সংরক্ষণের জন্য)
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+const upload = multer({ storage: storage });
 
-// Basic Test Route
-app.get('/', (req, res) => {
-    res.send('Chat App Server is running smoothly! 🚀');
+// ডাটাবেজ কানেকশন
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/chatexDB')
+    .then(() => console.log('MongoDB Connected Successfully!'))
+    .catch(err => console.log('MongoDB Connection Error:', err));
+
+// ১. রেজিস্ট্রেশন রাউট
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { username, phone, password } = req.body;
+        const existingUser = await User.findOne({ phone });
+        if (existingUser) {
+            return res.status(400).json({ message: 'এই ফোন নম্বর দিয়ে ইতিমধ্যে অ্যাকাউন্ট রয়েছে!' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({ username, phone, password: hashedPassword });
+        await newUser.save();
+
+        res.status(201).json({ message: 'Registration successful!' });
+    } catch (err) {
+        res.status(500).json({ message: 'Server Error: ' + err.message });
+    }
 });
 
-// ১. অনলাইন ইউজারদের ট্র্যাক করার জন্য ম্যাপ
+// ২. লগইন রাউট
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { phone, password } = req.body;
+        const user = await User.findOne({ phone });
+        if (!user) {
+            return res.status(400).json({ message: 'ইউজার পাওয়া যায়নি!' });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'ভুল পাসওয়ার্ড!' });
+        }
+
+        const token = jwt.sign({ id: user._id }, 'secret_key', { expiresIn: '7d' });
+        res.json({ token, user: { username: user.username, phone: user.phone, profilePic: user.profilePic } });
+    } catch (err) {
+        res.status(500).json({ message: 'Server Error: ' + err.message });
+    }
+});
+
+// ৩. প্রফাইল আপডেট রাউট
+app.post('/api/user/update', async (req, res) => {
+    try {
+        const { currentPhone, newUsername, newPhone, newProfilePic } = req.body;
+        const user = await User.findOne({ phone: currentPhone });
+        if (!user) return res.status(404).json({ message: 'ইউজার পাওয়া যায়নি!' });
+
+        if (newUsername) user.username = newUsername;
+        if (newPhone) user.phone = newPhone;
+        if (newProfilePic !== undefined) user.profilePic = newProfilePic;
+
+        await user.save();
+        res.json({ message: 'Profile updated successfully!', user });
+    } catch (err) {
+        res.status(500).json({ message: 'Server Error: ' + err.message });
+    }
+});
+
+// ৪. ফাইল/ছবি/ভয়েস আপলোড রাউট
+app.post('/api/upload', upload.single('file'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ message: 'কোনো ফাইল আপলোড করা হয়নি!' });
+    }
+    const fileUrl = '/uploads/' + req.file.filename;
+    res.json({ fileUrl, fileType: req.file.mimetype });
+});
+
+// Socket.io রিয়েল-টাইম চ্যাট ও কলিং লজিক
 const activeUsers = new Map();
 
 io.on('connection', (socket) => {
-    console.log('A user connected! ID:', socket.id);
-
-    // পুরোনো মেসেজ লোড করা
-    socket.on('load_old_messages', async () => {
-        try {
-            const previousMessages = await Message.find().sort({ createdAt: 1 }).limit(50);
-            socket.emit('load_old_messages', previousMessages);
-        } catch (err) {
-            console.error('Error loading old messages:', err);
-        }
+    socket.on('join_user', async (username) => {
+        activeUsers.set(socket.id, username);
+        updateAllFriendsList();
     });
 
-    // ইউজার জয়েন করলে ম্যাপে সেভ করা এবং সবাইকে লিস্ট পাঠানো
-    socket.on('join_user', (username) => {
-        if (username) {
-            activeUsers.set(socket.id, username);
-            console.log(`User Joined: ${username} (Socket ID: ${socket.id})`);
-
-            // সব ক্লায়েন্টের কাছে আপডেট লিস্ট পাঠিয়ে দেওয়া
-            const userList = Array.from(activeUsers.values());
-            io.emit('update_user_list', userList);
-        }
-    });
-
-    // নতুন চ্যাট মেসেজ হ্যান্ডেল করা এবং ডাটাবেসে সেভ করা
-    socket.on('chat message', async (data) => {
-        console.log('📥 Server theke paowa chat message:', data);
+    socket.on('search_and_add_friend', async ({ currentUsername, searchPhone }) => {
         try {
-            // ক্লায়েন্ট থেকে text বা message যে নামেই আসুক না কেন, তা ধরে নেব
-            const messageText = data.text || data.message;
+            const currentUser = await User.findOne({ username: currentUsername });
+            const friendToAdd = await User.findOne({ phone: searchPhone });
 
-            if (!messageText) {
-                console.error('Error: Message text is missing!');
+            if (!friendToAdd) {
+                socket.emit('friend_add_response', { success: false, message: 'এই নম্বরে কোনো ইউজার পাওয়া যায়নি!' });
                 return;
             }
 
+            if (currentUser._id.toString() === friendToAdd._id.toString()) {
+                socket.emit('friend_add_response', { success: false, message: 'নিজের নম্বর অ্যাড করতে পারবেন না!' });
+                return;
+            }
+
+            if (currentUser.friends.includes(friendToAdd._id)) {
+                socket.emit('friend_add_response', { success: false, message: 'তিনি ইতিমধ্যে আপনার ফ্রেন্ড লিস্টে আছেন!' });
+                return;
+            }
+
+            currentUser.friends.push(friendToAdd._id);
+            await currentUser.save();
+
+            // উভয়পক্ষকে ফ্রেন্ড হিসেবে যুক্ত করা (মিউচুয়াল কানেকশন)
+            if (!friendToAdd.friends.includes(currentUser._id)) {
+                friendToAdd.friends.push(currentUser._id);
+                await friendToAdd.save();
+            }
+
+            socket.emit('friend_add_response', { success: true, message: `${friendToAdd.username} সফলভাবে ফ্রেন্ড হিসেবে যুক্ত হয়েছেন!` });
+            updateAllFriendsList();
+        } catch (err) {
+            socket.emit('friend_add_response', { success: false, message: 'ত্রুটি ঘটেছে!' });
+        }
+    });
+
+    // পুরনো মেসেজ লোড করার নিরাপদ লজিক
+    socket.on('load_old_messages', async (data) => {
+        try {
+            // যদি কোনো কারণে ডেটা বা ইউজার নাম না থাকে, তবে কোড এখানেই থেমে যাবে (ক্র্যাশ করবে না)
+            if (!data || !data.user1 || !data.user2) return;
+
+            const { user1, user2 } = data;
+            const messages = await Message.find({
+                $or: [
+                    { sender: user1, receiver: user2 },
+                    { sender: user2, receiver: user1 }
+                ]
+            }).sort({ createdAt: 1 }); // পুরনো থেকে নতুন ক্রমানুসারে সাজানো
+
+            socket.emit('old_messages_loaded', messages);
+        } catch (err) {
+            console.log('Load message error:', err);
+        }
+    });
+    // চ্যাট মেসেজ রিসিভ, ডাটাবেজে সেভ এবং ইউজারের কাছে পাঠানোর লজিক
+    socket.on('chat message', async (data) => {
+        try {
+            // ১. ডাটাবেজে মেসেজ পার্মানেন্টলি সেভ করা
             const newMessage = new Message({
                 sender: data.sender,
-                message: messageText // এখানে সঠিক ভ্যারিয়েবলটি পাস করা হলো
+                receiver: data.receiver,
+                text: data.text,
+                fileUrl: data.fileUrl || '',
+                fileType: data.fileType || ''
             });
             await newMessage.save();
 
-            // সবার কাছে মেসেজ পাঠিয়ে দেওয়া (যাতে সব ক্লায়েন্ট text প্রপার্টি পায়)
-            io.emit('chat message', {
-                sender: data.sender,
-                text: messageText
-            });
+            // ২. রিসিভার এবং সেন্ডারকে লাইভ মেসেজ পাঠানো
+            const receiverSocketId = Array.from(activeUsers.entries()).find(([id, name]) => name === data.receiver)?.[0];
+            const senderSocketId = socket.id;
+
+            if (receiverSocketId) {
+                io.to(receiverSocketId).emit('chat message', data);
+            }
+            io.to(senderSocketId).emit('chat message', data);
+
         } catch (err) {
-            console.error('Error saving message:', err);
+            console.log('Message save error:', err);
         }
     });
-    // ডিসকানেক্ট হলে লিস্ট থেকে বাদ দেওয়া
+
+    // কলিং সিগন্যালিং ইভেন্টসমূহ
+    socket.on('call_offer', (data) => {
+        const targetSocketId = Array.from(activeUsers.entries()).find(([id, name]) => name === data.to)?.[0];
+        if (targetSocketId) {
+            io.to(targetSocketId).emit('incoming_call', { from: activeUsers.get(socket.id), offer: data.offer, isVideo: data.isVideo });
+        }
+    });
+
+    socket.on('call_answer', (data) => {
+        const targetSocketId = Array.from(activeUsers.entries()).find(([id, name]) => name === data.to)?.[0];
+        if (targetSocketId) {
+            io.to(targetSocketId).emit('call_answered', { answer: data.answer });
+        }
+    });
+
+    socket.on('ice_candidate', (data) => {
+        const targetSocketId = Array.from(activeUsers.entries()).find(([id, name]) => name === data.to)?.[0];
+        if (targetSocketId) {
+            io.to(targetSocketId).emit('ice_candidate', { candidate: data.candidate });
+        }
+    });
+
+    socket.on('end_call', (data) => {
+        const targetSocketId = Array.from(activeUsers.entries()).find(([id, name]) => name === data.to)?.[0];
+        if (targetSocketId) {
+            io.to(targetSocketId).emit('end_call');
+        }
+    });
+
     socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
         activeUsers.delete(socket.id);
-        io.emit('update_user_list', Array.from(activeUsers.values()));
+        updateAllFriendsList();
     });
 });
 
-// Start Server
+async function updateAllFriendsList() {
+    for (let [socketId, username] of activeUsers.entries()) {
+        const user = await User.findOne({ username }).populate('friends', 'username phone profilePic');
+        if (user) {
+            const friendsData = user.friends.map(f => ({
+                username: f.username,
+                phone: f.phone,
+                profilePic: f.profilePic || '', // প্রোফাইল পিকচার নিশ্চিত করা
+                isOnline: Array.from(activeUsers.values()).includes(f.username)
+            }));
+            io.to(socketId).emit('update_friend_list', friendsData);
+        }
+    }
+}
+
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT} 🚀`);
-});
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -1,13 +1,12 @@
 const mongoose = require('mongoose');
 
-// User Schema Structure
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
         required: true,
         unique: true
     },
-    email: {
+    phone: {
         type: String,
         required: true,
         unique: true
@@ -15,7 +14,15 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true
-    }
-}, { timestamps: true }); // এটি অ্যাকাউন্ট তৈরির সঠিক সময় সেভ রাখবে
+    },
+    profilePic: {
+        type: String,
+        default: ''
+    },
+    friends: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }]
+}, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);
