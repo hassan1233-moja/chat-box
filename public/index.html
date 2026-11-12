@@ -72,12 +72,37 @@
             video { width: 320px; height: 240px; background: #222; border-radius: 8px; object-fit: cover; }
 
             @media (max-width: 768px) {
-                #menu-btn { display: block; }
-                #close-sidebar { display: block !important; }
-                #sidebar { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; transform: translateX(0); z-index: 2000; }
-                .chat-main { display: none; }
-                .chat-main.mobile-active { display: flex; width: 100%; height: 100vh; position: fixed; top: 0; left: 0; background: #f9f6a9; z-index: 2001; padding-top: 60px; }
+             #menu-btn { display: block; }
+             #close-sidebar { display: block !important; }
+             #sidebar { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; transform: translateX(0); z-index: 2000; }
+            .chat-main { display: none; }
+    
+    /* মোবাইলে চ্যাট স্ক্রিন ফিক্স করার জন্য ১০০% হাইটের পরিবর্তে dynamic viewport height (100dvh) ব্যবহার করুন */
+           .chat-main.mobile-active { 
+               display: flex; 
+               width: 100%; 
+               height: 100dvh; /* কিবোর্ড ওপেন হলে উচ্চতা স্বয়ংক্রিয়ভাবে অ্যাডজাস্ট করবে */
+               position: fixed; 
+               top: 0; 
+               left: 0; 
+               background: #f9f6a9; 
+               z-index: 2001; 
+               padding-top: 50px; 
+               box-sizing: border-box;
             }
+        }
+
+/* চ্যাট বক্স যেন বাকি জায়গা নিয়ে স্ক্রোল হয় এবং ইনপুট বক্স সবসময় নিচে ফিক্সড থাকে */
+            #chat-box { 
+               flex-grow: 1; 
+               border: 2px solid #f59536; 
+               border-radius: 5px; 
+               overflow-y: auto; 
+               padding: 10px; 
+               margin-bottom: 5px; 
+               background: #fafafa; 
+               min-height: 0; /* ফ্লেক্সবক্সে ওভারফ্লো ও স্ক্রোল ঠিক রাখতে এটি জরুরি */
+        }
         </style>
     </head>
     <body>
