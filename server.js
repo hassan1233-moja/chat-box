@@ -8,7 +8,10 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
+
+// Cloudinary এবং Multer Storage Cloudinary প্যাকেজ
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const User = require('./models/User');
 const Message = require('./models/Message');
@@ -20,22 +23,25 @@ const io = new Server(server);
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // ব্যাকআপের জন্য রাখা হলো
 
-// আপলোড ফোল্ডার না থাকলে তৈরি করে নেওয়া
-if (!fs.existsSync('./uploads')) {
-    fs.existsSync('./uploads') || fs.mkdirSync('./uploads');
-}
-
-// Multer কনফিগারেশন (ফাইল, ছবি ও ভয়েস নোট সংরক্ষণের জন্য)
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/');
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname);
-    }
+// Cloudinary কনফিগারেশন (.env ফাইল থেকে ভ্যালুগুলো রিড করবে)
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
+
+// Multer-এর মাধ্যমে ফাইল ও ছবি সরাসরি ক্লাউডিনারিতে পাঠানোর কনফিগারেশন
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'chatex_uploads', // ক্লাউডিনারিতে যে ফোল্ডারে ফাইলগুলো জমা হবে
+        allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'webm', 'mp4', 'mp3'],
+        resource_type: 'auto' // ইমেজ, ভিডিও, অডিও বা যেকোনো ফাইল স্বয়ংক্রিয়ভাবে ডিটেক্ট করবে
+    },
+});
+
 const upload = multer({ storage: storage });
 
 // ডাটাবেজ কানেকশন
@@ -101,12 +107,13 @@ app.post('/api/user/update', async (req, res) => {
     }
 });
 
-// ৪. ফাইল/ছবি/ভয়েস আপলোড রাউট
+// ৪. ফাইল/ছবি/ভয়েস আপলোড রাউট (Cloudinary URL রিটার্ন করবে)
 app.post('/api/upload', upload.single('file'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ message: 'কোনো ফাইল আপলোড করা হয়নি!' });
     }
-    const fileUrl = '/uploads/' + req.file.filename;
+    // req.file.path-এর ভেতরে ক্লাউডিনারির পার্মানেন্ট সিকিউর URL পাওয়া যায়
+    const fileUrl = req.file.path;
     res.json({ fileUrl, fileType: req.file.mimetype });
 });
 
@@ -158,7 +165,6 @@ io.on('connection', (socket) => {
     // পুরনো মেসেজ লোড করার নিরাপদ লজিক
     socket.on('load_old_messages', async (data) => {
         try {
-            // যদি কোনো কারণে ডেটা বা ইউজার নাম না থাকে, তবে কোড এখানেই থেমে যাবে (ক্র্যাশ করবে না)
             if (!data || !data.user1 || !data.user2) return;
 
             const { user1, user2 } = data;
@@ -167,17 +173,17 @@ io.on('connection', (socket) => {
                     { sender: user1, receiver: user2 },
                     { sender: user2, receiver: user1 }
                 ]
-            }).sort({ createdAt: 1 }); // পুরনো থেকে নতুন ক্রমানুসারে সাজানো
+            }).sort({ createdAt: 1 });
 
             socket.emit('old_messages_loaded', messages);
         } catch (err) {
             console.log('Load message error:', err);
         }
     });
+
     // চ্যাট মেসেজ রিসিভ, ডাটাবেজে সেভ এবং ইউজারের কাছে পাঠানোর লজিক
     socket.on('chat message', async (data) => {
         try {
-            // ১. ডাটাবেজে মেসেজ পার্মানেন্টলি সেভ করা
             const newMessage = new Message({
                 sender: data.sender,
                 receiver: data.receiver,
@@ -187,7 +193,6 @@ io.on('connection', (socket) => {
             });
             await newMessage.save();
 
-            // ২. রিসিভার এবং সেন্ডারকে লাইভ মেসেজ পাঠানো
             const receiverSocketId = Array.from(activeUsers.entries()).find(([id, name]) => name === data.receiver)?.[0];
             const senderSocketId = socket.id;
 
@@ -243,7 +248,7 @@ async function updateAllFriendsList() {
             const friendsData = user.friends.map(f => ({
                 username: f.username,
                 phone: f.phone,
-                profilePic: f.profilePic || '', // প্রোফাইল পিকচার নিশ্চিত করা
+                profilePic: f.profilePic || '',
                 isOnline: Array.from(activeUsers.values()).includes(f.username)
             }));
             io.to(socketId).emit('update_friend_list', friendsData);

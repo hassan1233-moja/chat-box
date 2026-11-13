@@ -7,102 +7,147 @@
         <link rel="stylesheet"
             href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
+            /* ব্রাউজারের ডিফল্ট নীল ট্যাপ হাইলাইট রিমুভ করা এবং গ্লোবাল স্টাইল */
+            * {
+                -webkit-tap-highlight-color: transparent;
+                -webkit-touch-callout: none;
+                box-sizing: border-box;
+            }
+
             body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 0; height: 100vh; display: flex; justify-content: center; align-items: center; }
             .container { width: 100%; max-width: 400px; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
             .hidden { display: none !important; }
-            input, button { width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-            button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
-            button:hover { background: #0056b3; }
+            input, button { width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px; }
+            button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; transition: opacity 0.2s, transform 0.1s; }
+            button:active { opacity: 0.85; transform: scale(0.98); }
             .switch-text { text-align: center; margin-top: 15px; cursor: pointer; color: #007bff; font-size: 14px; }
             
             #chat-layout { display: flex; width: 100vw; height: 100vh; background: #f9f6a9; position: relative; overflow: hidden; }
             
-            #sidebar { width: 280px; background: #2c3e50; color: white; padding: 15px; height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; transition: transform 0.3s ease; z-index: 1000; }
+            /* সাইডবার (ডেস্কটপে বাম পাশে, মোবাইলে ডিফল্ট হোম স্ক্রিন) */
+            #sidebar { width: 300px; background: #2c3e50; color: white; padding: 15px; height: 100vh; display: flex; flex-direction: column; z-index: 1000; }
             
-            .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #34495e; padding-bottom: 8px; }
-            .profile-trigger { display: flex; align-items: center; gap: 8px; cursor: pointer; background: #34495e; padding: 5px 10px; border-radius: 20px; transition: 0.2s; }
+            .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #34495e; padding-bottom: 10px; gap: 8px; }
+            .profile-trigger { display: flex; align-items: center; gap: 8px; cursor: pointer; background: #34495e; padding: 5px 10px; border-radius: 20px; flex-shrink: 0; transition: background 0.2s; }
             .profile-trigger:hover { background: #16a085; }
             .profile-avatar-sm { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #7f8c8d; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: white; }
 
+            /* প্রোফাইলের পাশের নেভবার ট্যাব (মোবাইলের জন্য) */
+            .mobile-nav-tabs { display: none; gap: 6px; }
+            .mobile-tab-btn { padding: 7px 12px; margin: 0; border-radius: 18px; background: #34495e; color: white; font-size: 12px; width: auto; display: flex; align-items: center; gap: 5px; }
+            .mobile-tab-btn.active { background: #1abc9c; }
+
             .add-friend-box { margin-bottom: 15px; display: flex; gap: 5px; }
-            .add-friend-box input { margin-top: 0; padding: 6px; font-size: 13px; }
-            .add-friend-box button { margin-top: 0; width: 40px; background: #1abc9c; }
+            .add-friend-box input { margin-top: 0; padding: 8px 10px; font-size: 13px; border-radius: 20px; border: none; outline: none; }
+            .add-friend-box button { margin-top: 0; width: 42px; background: #1abc9c; border-radius: 50%; flex-shrink: 0; }
 
             #user-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
-            #user-list li { padding: 8px 10px; margin-bottom: 6px; background: #34495e; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+            #user-list li { padding: 10px 12px; margin-bottom: 6px; background: #34495e; border-radius: 8px; cursor: pointer; font-size: 14px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s, transform 0.1s; user-select: none; }
             #user-list li:hover { background: #1abc9c; }
+            #user-list li:active { transform: scale(0.98); background: #16a085; }
             #user-list li.active { background: #16a085; border-left: 4px solid #f1c40f; }
 
             .friend-info { display: flex; align-items: center; gap: 10px; }
-            .friend-avatar { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; background: #7f8c8d; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: white; }
+            .friend-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: #7f8c8d; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: bold; color: white; }
             
-            .chat-main { flex-grow: 1; display: flex; flex-direction: column; padding: 15px; box-sizing: border-box; height: 100vh; }
+            /* মেইন চ্যাট ও নিউজ এরিয়া */
+            .chat-main { flex-grow: 1; display: flex; flex-direction: column; padding: 15px; height: 100vh; }
             
-            .navbar-tabs { display: flex; background: #2c3e50; color: white; border-radius: 5px; margin-bottom: 10px; overflow: hidden; }
-            .tab-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; background: #2c3e50; border: none; color: white; font-weight: bold; }
+            /* ডেস্কটপ নেভবার ট্যাব */
+            .desktop-navbar-tabs { display: flex; background: #2c3e50; color: white; border-radius: 6px; margin-bottom: 10px; overflow: hidden; }
+            .tab-btn { flex: 1; padding: 10px; margin: 0; text-align: center; cursor: pointer; background: #2c3e50; border: none; color: white; font-weight: bold; border-radius: 0; }
             .tab-btn.active { background: #1abc9c; }
 
             .tab-content { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; }
             
             #chat-box-container { display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
-            #no-chat-selected { flex-grow: 1; display: flex; align-items: center; justify-content: center; color: #7f8c8d; font-size: 16px; text-align: center; background: #fafafa; border: 2px dashed #bdc3c7; border-radius: 5px; }
+            #no-chat-selected { flex-grow: 1; display: flex; align-items: center; justify-content: center; color: #7f8c8d; font-size: 16px; text-align: center; background: #fafafa; border: 2px dashed #bdc3c7; border-radius: 8px; }
             
-            #chat-box { flex-grow: 1; border: 2px solid #f59536; border-radius: 5px; overflow-y: auto; padding: 15px; margin-bottom: 5px; background: #fafafa; }
-            
-            .message { margin-bottom: 10px; padding: 8px 12px; border-radius: 4px; background: #e1ffc7; word-break: break-word; }
-            .message.mentioned { background: #ffeeba; border-left: 4px solid #ffc107; }
+            /* ইউনিক মডার্ন চ্যাট বক্স ডিজাইন */
+            #chat-box { 
+                flex-grow: 1; 
+                border: 1px solid #dcdde1; 
+                border-radius: 8px; 
+                overflow-y: auto; 
+                padding: 15px; 
+                margin-bottom: 8px; 
+                background: #efeae2; 
+                background-image: radial-gradient(#d1ccc0 0.85px, transparent 0.85px); 
+                background-size: 16px 16px;
+                min-height: 0; 
+            }
             
             #form { display: flex; flex-direction: column; gap: 5px; }
-            #input { flex-grow: 1; resize: none; min-height: 40px; max-height: 100px; padding: 10px; border-radius: 5px; border: 1px solid #ccc; outline: none; }
+            #input { flex-grow: 1; resize: none; min-height: 40px; max-height: 100px; padding: 10px 14px; border-radius: 20px; border: 1px solid #ccc; outline: none; font-family: inherit; font-size: 14px; }
 
-            .news-container { flex-grow: 1; overflow-y: auto; background: white; padding: 15px; border-radius: 5px; border: 2px solid #f59536; }
-            .news-card { background: #f8f9fa; padding: 12px; margin-bottom: 10px; border-radius: 5px; border-left: 4px solid #007bff; }
-            .news-card h4 { margin: 0 0 5px 0; }
+            .news-container { flex-grow: 1; overflow-y: auto; background: white; padding: 15px; border-radius: 8px; border: 2px solid #f59536; }
+            .news-card { background: #f8f9fa; padding: 12px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid #007bff; }
+            .news-card h4 { margin: 0 0 5px 0; color: #2c3e50; }
             .news-card a { color: #007bff; text-decoration: none; font-size: 14px; font-weight: bold; }
-
-            #menu-btn { display: none; position: fixed; top: 15px; left: 15px; z-index: 1001; background: #2c3e50; color: white; border: none; padding: 10px 12px; border-radius: 5px; font-size: 18px; cursor: pointer; }
             
-            #profile-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; justify-content: center; align-items: center; }
-            .profile-card { background: white; width: 320px; padding: 20px; border-radius: 8px; text-align: center; position: relative; }
-            .profile-card img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 3px solid #1abc9c; }
-            .close-modal { position: absolute; top: 10px; right: 15px; font-size: 20px; cursor: pointer; color: #7f8c8d; }
+            /* প্রোফাইল মডাল ও ইমেজ জুম প্রিভিউ */
+            #profile-modal, #image-zoom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; justify-content: center; align-items: center; }
+            .profile-card { background: white; width: 320px; padding: 20px; border-radius: 10px; text-align: center; position: relative; }
+            .profile-card img { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 3px solid #1abc9c; cursor: pointer; }
+            .close-modal { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #7f8c8d; }
 
-            #call-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5000; flex-direction: column; align-items: center; justify-content: center; color: white; }
-            .video-container { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
-            video { width: 320px; height: 240px; background: #222; border-radius: 8px; object-fit: cover; }
+            /* কল স্ক্রিন ও ভিডিও মিররিং ফিক্স */
+            #call-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 5000; flex-direction: column; align-items: center; justify-content: center; color: white; padding: 15px; }
+            .video-container { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; width: 100%; }
+            video { width: 320px; max-width: 90vw; height: 240px; background: #222; border-radius: 10px; object-fit: cover; border: 2px solid #34495e; }
+            #local-video { transform: scaleX(-1); }
 
-            @media (max-width: 768px) {
-             #menu-btn { display: block; }
-             #close-sidebar { display: block !important; }
-             #sidebar { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; transform: translateX(0); z-index: 2000; }
-            .chat-main { display: none; }
-    
-    /* মোবাইলে চ্যাট স্ক্রিন ফিক্স করার জন্য ১০০% হাইটের পরিবর্তে dynamic viewport height (100dvh) ব্যবহার করুন */
-           .chat-main.mobile-active { 
-               display: flex; 
-               width: 100%; 
-               height: 100dvh; /* কিবোর্ড ওপেন হলে উচ্চতা স্বয়ংক্রিয়ভাবে অ্যাডজাস্ট করবে */
-               position: fixed; 
-               top: 0; 
-               left: 0; 
-               background: #f9f6a9; 
-               z-index: 2001; 
-               padding-top: 50px; 
-               box-sizing: border-box;
+            /* হোয়াটসঅ্যাপ/ইমো স্টাইল ওপর থেকে নিচে স্লাইড অ্যানিমেশন */
+            @keyframes slideDown {
+                from { transform: translateY(-100%); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
             }
-        }
 
-/* চ্যাট বক্স যেন বাকি জায়গা নিয়ে স্ক্রোল হয় এবং ইনপুট বক্স সবসময় নিচে ফিক্সড থাকে */
-            #chat-box { 
-               flex-grow: 1; 
-               border: 2px solid #f59536; 
-               border-radius: 5px; 
-               overflow-y: auto; 
-               padding: 10px; 
-               margin-bottom: 5px; 
-               background: #fafafa; 
-               min-height: 0; /* ফ্লেক্সবক্সে ওভারফ্লো ও স্ক্রোল ঠিক রাখতে এটি জরুরি */
-        }
+            /* মোবাইল রেসপন্সিভ লেআউট */
+            @media (max-width: 768px) {
+                /* মোবাইলে সাইডবারই ডিফল্ট হোম স্ক্রিন হিসেবে ফুল স্ক্রিন থাকবে */
+                #sidebar { 
+                    position: fixed; 
+                    top: 0; 
+                    left: 0; 
+                    width: 100%; 
+                    height: 100dvh; 
+                    z-index: 2000; 
+                    transition: transform 0.3s ease; 
+                }
+
+                /* চ্যাট বা নিউজ ওপেন করলে সাইডবার সরে যাবে */
+                #sidebar.hide-mobile {
+                    transform: translateX(-100%);
+                }
+
+                /* প্রোফাইলের পাশের মোবাইল নেভবার শো করবে, ডেস্কটপ নেভবার হাইড হবে */
+                .mobile-nav-tabs { display: flex; }
+                .desktop-navbar-tabs, .desktop-brand-bar { display: none !important; }
+
+                /* মোবাইলে ডিফল্টভাবে মেইন কন্টেইনার হাইড থাকবে, শুধু অ্যাক্টিভ হলে ওপর থেকে নিচে স্লাইড হয়ে খুলবে */
+                .chat-main { 
+                    display: none; 
+                    width: 100%; 
+                    height: 100dvh; 
+                    position: fixed; 
+                    top: 0; 
+                    left: 0; 
+                    background: #f9f6a9; 
+                    z-index: 2001; 
+                    padding: 10px; 
+                }
+                
+                .chat-main.mobile-active { 
+                    display: flex; 
+                    animation: slideDown 0.28s ease-out forwards;
+                }
+
+                /* মোবাইলে নিউজ পোর্টালের ভেতরে ব্যাক বাটন হেডার */
+                .mobile-news-header {
+                    display: flex !important;
+                }
+            }
         </style>
     </head>
     <body>
@@ -125,81 +170,94 @@
         </div>
 
         <div id="chat-layout" class="hidden">
-            <button id="menu-btn" type="button"><i class="fa-solid fa-bars"></i>
-                Back to Chats</button>
-
+            <!-- সাইডবার (মোবাইলে এটিই হোম পেজ হিসেবে থাকবে) -->
             <div id="sidebar">
                 <div class="sidebar-header">
+                    <!-- নিজের প্রোফাইল বাটন -->
                     <div class="profile-trigger" id="open-profile-btn">
                         <div class="profile-avatar-sm"
                             id="sidebar-my-avatar">U</div>
                         <span id="sidebar-my-name"
-                            style="font-size: 13px; font-weight: bold; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Profile</span>
+                            style="font-size: 13px; font-weight: bold; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Profile</span>
                     </div>
-                    <span id="close-sidebar"
-                        style="display: none; cursor: pointer; font-size: 22px;">&times;</span>
+
+                    <!-- মোবাইলে প্রোফাইলের পাশেই নেভবার (Chat & News) -->
+                    <div class="mobile-nav-tabs">
+                        <button type="button" class="mobile-tab-btn active"
+                            id="mob-tab-chat" onclick="handleMobileTab('chat')">
+                            <i class="fa-solid fa-comments"></i> Chat
+                        </button>
+                        <button type="button" class="mobile-tab-btn"
+                            id="mob-tab-news" onclick="handleMobileTab('news')">
+                            <i class="fa-solid fa-newspaper"></i> News
+                        </button>
+                    </div>
                 </div>
 
                 <div class="add-friend-box">
                     <input type="text" id="search-phone-input"
-                        placeholder="Enter Phone Number..." />
+                        placeholder="Search friend by phone..." />
                     <button type="button" id="add-friend-btn"><i
                             class="fa-solid fa-user-plus"></i></button>
                 </div>
                 <div id="friend-msg"
-                    style="font-size: 11px; margin-bottom: 8px; color: #1abc9c;"></div>
+                    style="font-size: 11px; margin-bottom: 8px; color: #1abc9c; text-align: center;"></div>
 
                 <ul id="user-list"></ul>
                 <div
-                    style="font-size: 11px; color: #a5b1c2; margin-top: 10px;">💡
-                    Click a name to open chat.</div>
+                    style="font-size: 11px; color: #a5b1c2; margin-top: 10px; text-align: center;">💡
+                    Tap a friend to start chatting</div>
             </div>
 
+            <!-- মেইন চ্যাট ও নিউজ ভিউ -->
             <div class="chat-main" id="chat-main-container">
-                <div class="navbar-tabs">
-                    <button class="tab-btn active"
-                        onclick="switchTab('chat')"><i
+                <!-- ডেস্কটপের জন্য টপ নেভবার ট্যাব -->
+                <div class="desktop-navbar-tabs">
+                    <button type="button" class="tab-btn active"
+                        id="desk-tab-chat" onclick="switchTab('chat')"><i
                             class="fa-solid fa-comments"></i> Chat</button>
-                    <button class="tab-btn" onclick="switchTab('news')"><i
+                    <button type="button" class="tab-btn" id="desk-tab-news"
+                        onclick="switchTab('news')"><i
                             class="fa-solid fa-newspaper"></i> News</button>
                 </div>
 
-                <div
-                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <div class="desktop-brand-bar"
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding: 0 5px;">
                     <h3 style="margin: 0;">Cha<span
                             style="color:#d35400;">tex</span></h3>
                     <span style="font-size: 13px; color: #2c3e50;">Active User:
                         <b id="user-display"></b></span>
                 </div>
 
+                <!-- চ্যাট ট্যাব কন্টেন্ট (এখানে ঢুকলে মোবাইলের নেভবার হাইড থাকবে) -->
                 <div id="chat-tab-content" class="tab-content">
                     <div id="no-chat-selected">
                         <div>
                             <i class="fa-solid fa-comments"
-                                style="font-size: 40px; margin-bottom: 10px;"></i><br>
-                            Select a chat from the left sidebar to start
-                            messaging.
+                                style="font-size: 40px; margin-bottom: 10px; color: #1abc9c;"></i><br>
+                            Select a friend from the list to start messaging.
                         </div>
                     </div>
 
                     <div id="chat-box-container" class="hidden">
+                        <!-- চ্যাট হেডার (সেন্ট্রালাইজড ব্যাক বাটন + প্রোফাইল + কল বাটন) -->
                         <div
-                            style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 5px; background: #080808; padding: 8px; border-radius: 4px;">
+                            style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #2c3e50; border-radius: 6px; color: white; margin-bottom: 6px;">
                             <div
-                                style="display: flex; align-items: center; gap: 2px;">
+                                style="display: flex; align-items: center; gap: 10px;">
                                 <button type="button" id="back-to-list-btn"
-                                    style="display: none; background: none; border: none; font-size: 20px; cursor: pointer; padding: 0px 0px; align-items: center;"><i
-                                        class="fa-solid fa-arrow-left"></i>
+                                    style="display: none; background: none; border: none; font-size: 18px; color: white; cursor: pointer; padding: 4px; margin: 0; width: auto; align-items: center; justify-content: center;">
+                                    <i class="fa-solid fa-arrow-left"></i>
                                 </button>
                                 <div id="active-chat-title"
-                                    style="font-size: 14px; font-weight: bold; color: #2c3e50;"></div>
+                                    style="font-size: 15px; font-weight: bold; display: flex; align-items: center; gap: 8px;"></div>
                             </div>
                             <div style="display: flex; gap: 8px;">
                                 <button type="button" id="start-voice-call"
-                                    style="margin:0; padding:6px 12px; background:#27ae60; font-size:12px; width:auto; border-radius:4px;"><i
+                                    style="margin:0; padding:8px 12px; background:#27ae60; font-size:20px; width:auto; border-radius:20%;"><i
                                         class="fa-solid fa-phone"></i></button>
                                 <button type="button" id="start-video-call"
-                                    style="margin:0; padding:6px 12px; background:#2980b9; font-size:12px; width:auto; border-radius:4px;"><i
+                                    style="margin:0; padding:8px 12px; background:#2980b9; font-size:20px; width:auto; border-radius:20%;"><i
                                         class="fa-solid fa-video"></i></button>
                             </div>
                         </div>
@@ -214,25 +272,41 @@
                                     required></textarea>
                                 <button type="button" id="mic-btn"
                                     title="Record Voice"
-                                    style="width: 40px; height: 40px; background: #e67e22; border-radius: 5px; margin: 0; cursor: pointer;"><i
+                                    style="width: 40px; height: 40px; background: #e67e22; border-radius: 50%; margin: 0; cursor: pointer; flex-shrink: 0;"><i
                                         class="fa-solid fa-microphone"></i></button>
                                 <label
-                                    style="background: #2c3e50; color: white; padding: 10px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 40px; box-sizing: border-box; margin: 0;">
+                                    style="background: #2c3e50; color: white; padding: 10px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; margin: 0; flex-shrink: 0;">
                                     <i class="fa-solid fa-paperclip"></i>
                                     <input type="file" id="file-input"
                                         style="display: none;" />
                                 </label>
                                 <button type="submit"
-                                    style="width: 45px; height: 40px; margin: 0;"><i
+                                    style="width: 42px; height: 40px; border-radius: 50%; background: #1abc9c; margin: 0; flex-shrink: 0;"><i
                                         class="fa-solid fa-paper-plane"></i></button>
                             </div>
                         </form>
                     </div>
                 </div>
 
+                <!-- নিউজ ট্যাব কন্টেন্ট -->
                 <div id="news-tab-content" class="tab-content hidden">
                     <div class="news-container">
-                        <h3>🇧🇩 Bangladeshi News Portals</h3>
+                        <!-- মোবাইলে নিউজ থেকে হোমে (চ্যাট লিস্টে) ফেরার হেডার -->
+                        <div class="mobile-news-header"
+                            style="display: none; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #eee;">
+                            <button type="button"
+                                onclick="handleMobileTab('chat')"
+                                style="width: auto; margin: 0; padding: 6px 12px; background: #2c3e50; font-size: 13px; border-radius: 20px;">
+                                <i class="fa-solid fa-arrow-left"></i> Back to
+                                Chats
+                            </button>
+                            <span
+                                style="font-weight: bold; color: #2c3e50;">News
+                                Portal</span>
+                        </div>
+
+                        <h3 style="margin-top: 0;">🇧🇩 Bangladeshi News
+                            Portals</h3>
                         <div class="news-card">
                             <h4>Prothom Alo (প্রথম আলো)</h4>
                             <a href="https://www.prothomalo.com"
@@ -262,12 +336,13 @@
             </div>
         </div>
 
+        <!-- প্রোফাইল সেটিংস মডাল -->
         <div id="profile-modal">
             <div class="profile-card">
                 <span class="close-modal" id="close-profile-btn">&times;</span>
                 <h3>⚙️ My Profile</h3>
                 <div id="profile-avatar-lg"
-                    style="width: 80px; height: 80px; border-radius: 50%; background: #1abc9c; color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 10px auto; font-weight: bold;">U</div>
+                    style="width: 90px; height: 90px; border-radius: 50%; background: #1abc9c; color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 10px auto; font-weight: bold; overflow:hidden;">U</div>
                 <input type="file" id="update-pic-input"
                     style="margin-bottom: 10px; font-size: 12px;" />
                 <input type="text" id="update-name-input"
@@ -284,8 +359,17 @@
             </div>
         </div>
 
+        <!-- ইমেজ জুম মডাল (প্রোফাইল পিক বড় করে দেখার জন্য) -->
+        <div id="image-zoom-modal" onclick="this.style.display='none'">
+            <img id="zoomed-img" src
+                style="max-width: 90%; max-height: 90vh; border-radius: 8px; border: 2px solid white;" />
+        </div>
+
+        <!-- কল স্ক্রিন ও কল ডিউরেশন টাইমার -->
         <div id="call-screen">
-            <h2 id="call-status-msg">Calling...</h2>
+            <h2 id="call-status-msg" style="margin-bottom: 5px;">Calling...</h2>
+            <div id="call-timer"
+                style="font-size: 18px; margin-bottom: 15px; color: #f1c40f; font-weight: bold;">00:00</div>
             <div class="video-container">
                 <div>
                     <p style="text-align:center; font-size:12px; margin:2px;">My
@@ -301,11 +385,11 @@
             </div>
             <div style="display: flex; gap: 15px;">
                 <button id="accept-call-btn" class="hidden"
-                    style="background: #2ecc71; width: 120px;">Accept
+                    style="background: #2ecc71; width: 120px; border-radius: 25px;">Accept
                     📞</button>
                 <button id="end-call-btn"
-                    style="background: #e74c3c; width: 120px;">End Call
-                    📴</button>
+                    style="background: #e74c3c; width: 120px; border-radius: 25px;">End
+                    Call 📴</button>
             </div>
         </div>
 
@@ -323,7 +407,6 @@
         const errorMsg = document.getElementById('error-msg');
         const userDisplay = document.getElementById('user-display');
 
-        const menuBtn = document.getElementById('menu-btn');
         const sidebar = document.getElementById('sidebar');
         const chatMainContainer = document.getElementById('chat-main-container');
 
@@ -344,6 +427,20 @@
         let socket;
         let currentUsername = '';
         let activeChatUser = null;
+        let callTimerInterval = null;
+        let callSeconds = 0;
+
+        // নোটিফিকেশন ও রিংটোন সাউন্ড ফাংশন
+        function playSound(type) {
+            let audioUrl = '';
+            if (type === 'ring') audioUrl = 'https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3';
+            else if (type === 'msg') audioUrl = 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3';
+            
+            if (audioUrl) {
+                const audio = new Audio(audioUrl);
+                audio.play().catch(e => console.log('Audio play error:', e));
+            }
+        }
 
         switchBtn.addEventListener('click', () => {
             isLoginMode = !isLoginMode;
@@ -404,7 +501,7 @@
 
             if (profilePic) {
                 sidebarMyAvatar.innerHTML = `<img src="${profilePic}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" />`;
-                profileAvatarLg.innerHTML = `<img src="${profilePic}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" />`;
+                profileAvatarLg.innerHTML = `<img src="${profilePic}" style="width:100%; height:100%; border-radius:50%; object-fit:cover; cursor:pointer;" onclick="zoomImage('${profilePic}')" />`;
             } else {
                 sidebarMyAvatar.textContent = username.charAt(0).toUpperCase();
                 profileAvatarLg.textContent = username.charAt(0).toUpperCase();
@@ -417,6 +514,11 @@
         openProfileBtn.onclick = () => { profileModal.style.display = 'flex'; };
         closeProfileBtn.onclick = () => { profileModal.style.display = 'none'; };
         logoutBtn.onclick = () => { localStorage.clear(); location.reload(); };
+
+        function zoomImage(url) {
+            document.getElementById('zoomed-img').src = url;
+            document.getElementById('image-zoom-modal').style.display = 'flex';
+        }
 
         saveProfileBtn.onclick = async () => {
             const newName = updateNameInput.value.trim();
@@ -432,30 +534,73 @@
                 localStorage.setItem('profilePic', picUrl);
             }
 
+            // সার্ভারে প্রোফাইল তথ্য আপডেট করা
+            try {
+                await fetch('/api/user/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        currentPhone: localStorage.getItem('phone'),
+                        newUsername: newName,
+                        newPhone: newPhone,
+                        newProfilePic: picUrl
+                    })
+                });
+                localStorage.setItem('username', newName);
+                localStorage.setItem('phone', newPhone);
+            } catch (e) { console.log('Update error:', e); }
+
             profileMsg.textContent = 'Profile updated successfully! 🎉';
             sidebarMyName.textContent = newName;
             userDisplay.textContent = newName;
             if(picUrl) {
                 sidebarMyAvatar.innerHTML = `<img src="${picUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" />`;
-                profileAvatarLg.innerHTML = `<img src="${picUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" />`;
+                profileAvatarLg.innerHTML = `<img src="${picUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover; cursor:pointer;" onclick="zoomImage('${picUrl}')" />`;
             }
-            setTimeout(() => { profileModal.style.display = 'none'; profileMsg.textContent = ''; }, 2000);
+            setTimeout(() => { profileModal.style.display = 'none'; profileMsg.textContent = ''; }, 1500);
         };
 
+        // ডেস্কটপ ট্যাব সুইচিং
         function switchTab(tab) {
             const chatTab = document.getElementById('chat-tab-content');
             const newsTab = document.getElementById('news-tab-content');
-            const buttons = document.querySelectorAll('.tab-btn');
-            buttons.forEach(btn => btn.classList.remove('active'));
+            document.getElementById('desk-tab-chat').classList.remove('active');
+            document.getElementById('desk-tab-news').classList.remove('active');
 
             if (tab === 'chat') {
                 chatTab.classList.remove('hidden');
                 newsTab.classList.add('hidden');
-                buttons[0].classList.add('active');
+                document.getElementById('desk-tab-chat').classList.add('active');
             } else {
                 chatTab.classList.add('hidden');
                 newsTab.classList.remove('hidden');
-                buttons[1].classList.add('active');
+                document.getElementById('desk-tab-news').classList.add('active');
+            }
+        }
+
+        // মোবাইল নেভবার ট্যাব হ্যান্ডলার (Chat হোম হিসেবে থাকবে, News এ ক্লিক করলে নিউজ খুলবে)
+        function handleMobileTab(tab) {
+            const mobChatBtn = document.getElementById('mob-tab-chat');
+            const mobNewsBtn = document.getElementById('mob-tab-news');
+            const chatTab = document.getElementById('chat-tab-content');
+            const newsTab = document.getElementById('news-tab-content');
+
+            mobChatBtn.classList.remove('active');
+            mobNewsBtn.classList.remove('active');
+
+            if (tab === 'chat') {
+                // চ্যাট অপশনে ক্লিক করলে হোম স্ক্রিন (ফ্রেন্ড লিস্ট) দেখাবে
+                mobChatBtn.classList.add('active');
+                sidebar.classList.remove('hide-mobile');
+                chatMainContainer.classList.remove('mobile-active');
+                activeChatUser = null;
+            } else if (tab === 'news') {
+                // নিউজ অপশনে ক্লিক করলে সাইডবার সরে গিয়ে নিউজ পোর্টাল ওপেন হবে
+                mobNewsBtn.classList.add('active');
+                sidebar.classList.add('hide-mobile');
+                chatTab.classList.add('hidden');
+                newsTab.classList.remove('hidden');
+                chatMainContainer.classList.add('mobile-active');
             }
         }
 
@@ -497,16 +642,14 @@
                 setTimeout(() => { friendMsg.textContent = ''; }, 4000);
             });
 
-            menuBtn.addEventListener('click', () => {
-                chatMainContainer.classList.remove('mobile-active');
-            });
-
-            // মোবাইলের ব্যাক বাটনের হ্যান্ডলার (একবারই লুপের বাইরে সঠিকভাবে সেট করা হলো)
+            // চ্যাটবক্স থেকে ব্যাক বাটনে ক্লিক করলে মোবাইলে আবার হোম স্ক্রিন (ফ্রেন্ড লিস্ট + নেভবার) ফিরে আসবে
             if (backBtn) {
                 backBtn.onclick = () => {
+                    sidebar.classList.remove('hide-mobile');
                     chatMainContainer.classList.remove('mobile-active');
                     activeChatUser = null;
                     backBtn.style.display = 'none';
+                    document.querySelectorAll('#user-list li').forEach(el => el.classList.remove('active'));
                 };
             }
 
@@ -531,7 +674,7 @@
 
                     let avatarHtml = `<div class="friend-avatar">${friendObj.username.charAt(0).toUpperCase()}</div>`;
                     if (friendObj.profilePic && friendObj.profilePic.trim() !== '') {
-                        avatarHtml = `<img src="${friendObj.profilePic}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;" />`;
+                        avatarHtml = `<img src="${friendObj.profilePic}" style="width:38px; height:38px; border-radius:50%; object-fit:cover;" />`;
                     }
 
                     li.innerHTML = `
@@ -544,18 +687,22 @@
                     
                     li.addEventListener('click', () => {
                         activeChatUser = friendObj.username;
+                        
+                        // চ্যাট ট্যাব ভিউ নিশ্চিত করা
+                        document.getElementById('chat-tab-content').classList.remove('hidden');
+                        document.getElementById('news-tab-content').classList.add('hidden');
                         noChatSelected.classList.add('hidden');
                         chatBoxContainer.classList.remove('hidden');
                         
                         let headerAvatarHtml = `<div style="width: 35px; height: 35px; border-radius: 50%; background: #7f8c8d; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white;">${friendObj.username.charAt(0).toUpperCase()}</div>`;
                         if (friendObj.profilePic && friendObj.profilePic.trim() !== '') {
-                            headerAvatarHtml = `<img src="${friendObj.profilePic}" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover;" />`;
+                            headerAvatarHtml = `<img src="${friendObj.profilePic}" style="width: 35px; height: 35px; border-radius: 50%; object-fit: cover; cursor:pointer;" onclick="zoomImage('${friendObj.profilePic}')" />`;
                         }
 
                         activeChatTitle.innerHTML = `
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 ${headerAvatarHtml}
-                                <span style="color: #16a085; font-weight: bold;">${activeChatUser}</span>
+                                <span style="color: #fff; font-weight: bold;">${activeChatUser}</span>
                             </div>
                         `;
                         
@@ -565,9 +712,11 @@
                         chatBox.innerHTML = '';
                         socket.emit('load_old_messages', { user1: username, user2: activeChatUser });
 
+                        // মোবাইলে ফ্রেন্ডের চ্যাটে ঢুকলে সাইডবার (নেভবারসহ) হাইড হয়ে যাবে এবং চ্যাট উইন্ডো স্লাইড-ডাউন হয়ে খুলবে
                         if (window.innerWidth <= 768) {
+                            sidebar.classList.add('hide-mobile');
                             chatMainContainer.classList.add('mobile-active');
-                            if (backBtn) backBtn.style.display = 'block';
+                            if (backBtn) backBtn.style.display = 'flex';
                         }
                     });
 
@@ -661,6 +810,9 @@
             };
 
             socket.on('chat message', (data) => {
+                if (data.sender !== username) {
+                    playSound('msg');
+                }
                 if ((data.sender === activeChatUser && data.receiver === username) || 
                     (data.sender === username && data.receiver === activeChatUser)) {
                     renderMessage(data, username, chatBox);
@@ -672,6 +824,7 @@
             const startVideoCallBtn = document.getElementById('start-video-call');
             const callScreen = document.getElementById('call-screen');
             const callStatusMsg = document.getElementById('call-status-msg');
+            const callTimerDisplay = document.getElementById('call-timer');
             const localVideo = document.getElementById('local-video');
             const remoteVideo = document.getElementById('remote-video');
             const endCallBtn = document.getElementById('end-call-btn');
@@ -681,10 +834,27 @@
             let localStream;
             const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
+            function startCallTimer() {
+                callSeconds = 0;
+                callTimerDisplay.textContent = "00:00";
+                callTimerInterval = setInterval(() => {
+                    callSeconds++;
+                    let mins = Math.floor(callSeconds / 60).toString().padStart(2, '0');
+                    let secs = (callSeconds % 60).toString().padStart(2, '0');
+                    callTimerDisplay.textContent = `${mins}:${secs}`;
+                }, 1000);
+            }
+
+            function stopCallTimer() {
+                clearInterval(callTimerInterval);
+                callTimerDisplay.textContent = "00:00";
+            }
+
             async function startCall(isVideo) {
                 if (!activeChatUser) { alert('আগে চ্যাট ওপেন করুন!'); return; }
                 callScreen.style.display = 'flex';
                 callStatusMsg.textContent = `Calling ${activeChatUser}...`;
+                playSound('ring');
 
                 try {
                     localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: isVideo });
@@ -716,11 +886,13 @@
                 activeChatUser = from;
                 callScreen.style.display = 'flex';
                 callStatusMsg.textContent = `Incoming Call from ${from}...`;
+                playSound('ring');
                 acceptCallBtn.classList.remove('hidden');
 
                 acceptCallBtn.onclick = async () => {
                     acceptCallBtn.classList.add('hidden');
                     callStatusMsg.textContent = `Connected with ${from}`;
+                    startCallTimer();
 
                     localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: isVideo });
                     localVideo.srcObject = localStream;
@@ -743,6 +915,7 @@
             socket.on('call_answered', async ({ answer }) => {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
                 callStatusMsg.textContent = `Connected!`;
+                startCallTimer();
             });
 
             socket.on('ice_candidate', async ({ candidate }) => {
@@ -753,6 +926,7 @@
                 if (localStream) localStream.getTracks().forEach(track => track.stop());
                 if (peerConnection) peerConnection.close();
                 peerConnection = null;
+                stopCallTimer();
                 callScreen.style.display = 'none';
                 acceptCallBtn.classList.add('hidden');
             }
@@ -776,9 +950,9 @@
             let fileContent = '';
             if (msg.fileUrl) {
                 if (msg.fileType && msg.fileType.startsWith('image/')) {
-                    fileContent = `<br><img src="${msg.fileUrl}" style="max-width:200px; border-radius:5px; margin-top:5px;" />`;
+                    fileContent = `<br><img src="${msg.fileUrl}" style="max-width:200px; border-radius:6px; margin-top:5px; cursor:pointer;" onclick="zoomImage('${msg.fileUrl}')" />`;
                 } else if (msg.fileType && msg.fileType.startsWith('video/')) {
-                    fileContent = `<br><video controls src="${msg.fileUrl}" style="max-width:220px; border-radius:5px; margin-top:5px;"></video>`;
+                    fileContent = `<br><video controls src="${msg.fileUrl}" style="max-width:220px; border-radius:6px; margin-top:5px;"></video>`;
                 } else if (msg.fileType && msg.fileType.startsWith('audio/')) {
                     fileContent = `<br><audio controls src="${msg.fileUrl}" style="margin-top:5px; width:220px;"></audio>`;
                 } else {
@@ -787,8 +961,8 @@
             }
 
             msgDiv.innerHTML = `
-                <div style="background: ${isMe ? '#dcf8c6' : '#fff'}; padding: 10px 14px; border-radius: 10px; max-width: 60%; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
-                    <p style="margin: 0; word-break: break-word;">${msg.text || ''}</p>
+                <div style="background: ${isMe ? '#dcf8c6' : '#fff'}; padding: 10px 14px; border-radius: 12px; max-width: 70%; box-shadow: 0 1px 2px rgba(0,0,0,0.12); position:relative;">
+                    <p style="margin: 0; word-break: break-word; font-size: 14px; color: #2c3e50;">${msg.text || ''}</p>
                     ${fileContent}
                 </div>
             `;
