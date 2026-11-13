@@ -49,46 +49,51 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/chatexDB')
     .then(() => console.log('MongoDB Connected Successfully!'))
     .catch(err => console.log('MongoDB Connection Error:', err));
 
-// ১. রেজিস্ট্রেশন রাউট
-app.post('/api/auth/register', async (req, res) => {
+// কুইক ফোন লগইন ও অটো-রেজিস্ট্রেশন রাউট
+app.post('/api/auth/quick-login', async (req, res) => {
     try {
-        const { username, phone, password } = req.body;
-        const existingUser = await User.findOne({ phone });
-        if (existingUser) {
-            return res.status(400).json({ message: 'এই ফোন নম্বর দিয়ে ইতিমধ্যে অ্যাকাউন্ট রয়েছে!' });
+        const { phone, username } = req.body;
+        if (!phone) {
+            return res.status(400).json({ message: 'ফোন নম্বর দিতে হবে!' });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = new User({ username, phone, password: hashedPassword });
-        await newUser.save();
+        let user = await User.findOne({ phone });
 
-        res.status(201).json({ message: 'Registration successful!' });
+        if (user) {
+            // পুরোনো ইউজার হলে সরাসরি লগইন টোকেন পাঠিয়ে দেবো
+            const token = jwt.sign({ id: user._id }, 'secret_key', { expiresIn: '7d' });
+            return res.json({
+                needsUsername: false,
+                token,
+                user: { username: user.username, phone: user.phone, profilePic: user.profilePic }
+            });
+        } else {
+            // নতুন ইউজার হলে এবং নাম না দেওয়া থাকলে ফ্রন্টএন্ডে নাম চাওয়ার সিগন্যাল পাঠাবো
+            if (!username) {
+                return res.json({ needsUsername: true });
+            }
+
+            // নতুন ইউজার নাম সহ আসলে অ্যাকাউন্ট তৈরি করে নেবো
+            user = new User({
+                username,
+                phone,
+                password: await bcrypt.hash('nopassword123', 10)
+            });
+            await user.save();
+
+            const token = jwt.sign({ id: user._id }, 'secret_key', { expiresIn: '7d' });
+
+            // এখানে ভুলটি ঠিক করা হয়েছে (return.status এর পরিবর্তে res.status)
+            return res.status(201).json({
+                needsUsername: false,
+                token,
+                user: { username: user.username, phone: user.phone, profilePic: user.profilePic }
+            });
+        }
     } catch (err) {
         res.status(500).json({ message: 'Server Error: ' + err.message });
     }
 });
-
-// ২. লগইন রাউট
-app.post('/api/auth/login', async (req, res) => {
-    try {
-        const { phone, password } = req.body;
-        const user = await User.findOne({ phone });
-        if (!user) {
-            return res.status(400).json({ message: 'ইউজার পাওয়া যায়নি!' });
-        }
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ message: 'ভুল পাসওয়ার্ড!' });
-        }
-
-        const token = jwt.sign({ id: user._id }, 'secret_key', { expiresIn: '7d' });
-        res.json({ token, user: { username: user.username, phone: user.phone, profilePic: user.profilePic } });
-    } catch (err) {
-        res.status(500).json({ message: 'Server Error: ' + err.message });
-    }
-});
-
 // ৩. প্রফাইল আপডেট রাউট
 app.post('/api/user/update', async (req, res) => {
     try {

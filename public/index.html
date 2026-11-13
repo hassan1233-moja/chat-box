@@ -19,7 +19,6 @@
             input, button { width: 100%; padding: 10px; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px; }
             button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; transition: opacity 0.2s, transform 0.1s; }
             button:active { opacity: 0.85; transform: scale(0.98); }
-            .switch-text { text-align: center; margin-top: 15px; cursor: pointer; color: #007bff; font-size: 14px; }
             
             #chat-layout { display: flex; width: 100vw; height: 100vh; background: #f9f6a9; position: relative; overflow: hidden; }
             
@@ -71,7 +70,6 @@
                 min-height: 0; 
             }
             
-            /* একাধিক ছবি পাশাপাশি প্রিভিউ করার বক্স */
             #file-preview-container {
                 display: none;
                 gap: 12px;
@@ -122,7 +120,6 @@
                 box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             }
 
-            /* ভয়েস রেকর্ডিং ইউআই (ওয়েভফর্ম ও টাইমার সহ) */
             #voice-record-bar {
                 display: none;
                 flex-grow: 1;
@@ -168,10 +165,11 @@
             .profile-card img { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 3px solid #1abc9c; cursor: pointer; }
             .close-modal { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #7f8c8d; }
 
-            #call-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: rgba(0,0,0,0.92); z-index: 5000; flex-direction: column; align-items: center; justify-content: space-between; color: white; padding: 15px 10px;overflow-y: auto; }
+            #call-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: rgba(0,0,0,0.92); z-index: 5000; flex-direction: column; align-items: center; justify-content: space-between; color: white; padding: 15px 10px; overflow-y: auto; }
             .video-container { display: flex; gap: 10px; margin-bottom: 5px; flex-wrap: wrap; justify-content: center; width: 100%; }
             video { width: 280px; max-width: 85vw; height: 200px; background: #222; border-radius: 8px; object-fit: cover; border: 2px solid #34495e; }
             #local-video { transform: scaleX(-1); }
+            #remote-video { transform: scaleX(1); }
 
             @keyframes slideDown {
                 from { transform: translateY(-100%); opacity: 0; }
@@ -191,19 +189,17 @@
     </head>
     <body>
 
+        <!-- কুইক লগইন ও রেজিস্ট্রেশন ফর্ম -->
         <div id="auth-container" class="container">
-            <h2 id="form-title" style="text-align: center;">Login 🔑</h2>
+            <h2 id="form-title" style="text-align: center;">Chatex Chat 💬</h2>
             <form id="auth-form">
-                <input type="text" id="username" placeholder="Full Name"
-                    class="hidden" />
                 <input type="text" id="phone"
-                    placeholder="Phone Number (e.g. 017xxxxxxxx)" required />
-                <input type="password" id="password" placeholder="Password"
+                    placeholder="Enter Phone Number (e.g. 017xxxxxxxx)"
                     required />
-                <button type="submit" id="auth-btn">Login</button>
+                <input type="text" id="username" placeholder="Enter Your Name"
+                    class="hidden" />
+                <button type="submit" id="auth-btn">Next</button>
             </form>
-            <div class="switch-text" id="switch-btn">Don't have an account? Sign
-                up here</div>
             <div id="error-msg"
                 style="color: red; text-align: center; margin-top: 10px; font-size: 14px;"></div>
         </div>
@@ -296,7 +292,6 @@
 
                         <div id="chat-box"></div>
 
-                        <!-- একাধিক ছবি প্রিভিউ কন্টেইনার -->
                         <div id="file-preview-container"></div>
 
                         <form id="form">
@@ -306,7 +301,6 @@
                                     placeholder="Type a message..."
                                     rows="1"></textarea>
 
-                                <!-- ভয়েস রেকর্ডিং চলাকালীন ভিজ্যুয়াল বার -->
                                 <div id="voice-record-bar">
                                     <div
                                         style="display: flex; align-items: center; gap: 8px; color: #e74c3c; font-weight: bold; font-size: 13px;">
@@ -453,10 +447,8 @@
         const authForm = document.getElementById('auth-form');
         const authBtn = document.getElementById('auth-btn');
         const formTitle = document.getElementById('form-title');
-        const usernameInput = document.getElementById('username');
         const phoneInput = document.getElementById('phone');
-        const passwordInput = document.getElementById('password');
-        const switchBtn = document.getElementById('switch-btn');
+        const usernameInput = document.getElementById('username');
         const errorMsg = document.getElementById('error-msg');
         const userDisplay = document.getElementById('user-display');
 
@@ -476,13 +468,13 @@
         const profileAvatarLg = document.getElementById('profile-avatar-lg');
         const profileMsg = document.getElementById('profile-msg');
 
-        let isLoginMode = true;
         let socket;
         let currentUsername = '';
         let activeChatUser = null;
         let callTimerInterval = null;
         let callSeconds = 0;
         let activeRingAudio = null;
+        let isWaitingForUsername = false; // নতুন ইউজার শনাক্ত করার ফ্ল্যাগ
 
         function playSound(type) {
             stopSound();
@@ -496,12 +488,10 @@
             if (audioUrl) {
                 activeRingAudio = new Audio(audioUrl);
                 if (type === 'ring') {
-                    activeRingAudio.loop = true; // কল রিংটোন বারবার বাজবে যতক্ষণ রিসিভ বা কাটা না হয়
+                    activeRingAudio.loop = true;
                 } else {
-                    activeRingAudio.loop = false; // মেসেজ টোন শুধু একবার বাজবে এবং শেষ হলে ক্লিয়ার হয়ে যাবে
-                    activeRingAudio.onended = () => {
-                        activeRingAudio = null;
-                    };
+                    activeRingAudio.loop = false;
+                    activeRingAudio.onended = () => { activeRingAudio = null; };
                 }
                 activeRingAudio.play().catch(e => console.log('Audio play error:', e));
             }
@@ -515,47 +505,41 @@
             }
         }
 
-        switchBtn.addEventListener('click', () => {
-            isLoginMode = !isLoginMode;
-            if (isLoginMode) {
-                formTitle.textContent = 'Login 🔑';
-                authBtn.textContent = 'Login';
-                usernameInput.classList.add('hidden');
-                switchBtn.textContent = "Don't have an account? Sign up here";
-            } else {
-                formTitle.textContent = 'Sign Up 📝';
-                authBtn.textContent = 'Register';
-                usernameInput.classList.remove('hidden');
-                switchBtn.textContent = "Already have an account? Login here";
-            }
-            errorMsg.textContent = '';
-        });
-
+        // কুইক লগইন বা রেজিস্ট্রেশন সাবমিট হ্যান্ডলার
         authForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             errorMsg.textContent = '';
-            const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
-            const payload = { phone: phoneInput.value, password: passwordInput.value };
-            if (!isLoginMode) payload.username = usernameInput.value;
+            const phoneVal = phoneInput.value.trim();
+            const usernameVal = usernameInput.value.trim();
+
+            if (!phoneVal) {
+                errorMsg.textContent = 'দয়া করে ফোন নম্বর দিন!';
+                return;
+            }
 
             try {
-                const response = await fetch(endpoint, {
+                const response = await fetch('/api/auth/quick-login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ phone: phoneVal, username: isWaitingForUsername ? usernameVal : undefined })
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.message || 'Something went wrong!');
 
-                if (isLoginMode) {
+                if (data.needsUsername) {
+                    // নম্বর ডাটাবেজে না থাকলে নাম চাওয়ার বক্স দেখাবে
+                    isWaitingForUsername = true;
+                    phoneInput.style.display = 'none';
+                    usernameInput.classList.remove('hidden');
+                    formTitle.textContent = 'Enter Your Name 📝';
+                    authBtn.textContent = 'Start Chatting';
+                } else {
+                    // সফলভাবে লগইন বা অ্যাকাউন্ট তৈরি সম্পন্ন হলে চ্যাট রুমে প্রবেশ
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('username', data.user.username);
                     localStorage.setItem('phone', data.user.phone);
                     localStorage.setItem('profilePic', data.user.profilePic || '');
                     showChatRoom(data.user.username, data.user.phone, data.user.profilePic);
-                } else {
-                    alert('Registration successful! Please login.');
-                    switchBtn.click();
                 }
             } catch (err) {
                 errorMsg.textContent = err.message;
