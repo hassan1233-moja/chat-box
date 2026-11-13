@@ -7,7 +7,6 @@
         <link rel="stylesheet"
             href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
-            /* ব্রাউজারের ডিফল্ট নীল ট্যাপ হাইলাইট রিমুভ করা এবং গ্লোবাল স্টাইল */
             * {
                 -webkit-tap-highlight-color: transparent;
                 -webkit-touch-callout: none;
@@ -24,7 +23,6 @@
             
             #chat-layout { display: flex; width: 100vw; height: 100vh; background: #f9f6a9; position: relative; overflow: hidden; }
             
-            /* সাইডবার (ডেস্কটপে বাম পাশে, মোবাইলে ডিফল্ট হোম স্ক্রিন) */
             #sidebar { width: 300px; background: #2c3e50; color: white; padding: 15px; height: 100vh; display: flex; flex-direction: column; z-index: 1000; }
             
             .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #34495e; padding-bottom: 10px; gap: 8px; }
@@ -32,7 +30,6 @@
             .profile-trigger:hover { background: #16a085; }
             .profile-avatar-sm { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #7f8c8d; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: white; }
 
-            /* প্রোফাইলের পাশের নেভবার ট্যাব (মোবাইলের জন্য) */
             .mobile-nav-tabs { display: none; gap: 6px; }
             .mobile-tab-btn { padding: 7px 12px; margin: 0; border-radius: 18px; background: #34495e; color: white; font-size: 12px; width: auto; display: flex; align-items: center; gap: 5px; }
             .mobile-tab-btn.active { background: #1abc9c; }
@@ -50,10 +47,8 @@
             .friend-info { display: flex; align-items: center; gap: 10px; }
             .friend-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: #7f8c8d; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: bold; color: white; }
             
-            /* মেইন চ্যাট ও নিউজ এরিয়া */
             .chat-main { flex-grow: 1; display: flex; flex-direction: column; padding: 15px; height: 100vh; }
             
-            /* ডেস্কটপ নেভবার ট্যাব */
             .desktop-navbar-tabs { display: flex; background: #2c3e50; color: white; border-radius: 6px; margin-bottom: 10px; overflow: hidden; }
             .tab-btn { flex: 1; padding: 10px; margin: 0; text-align: center; cursor: pointer; background: #2c3e50; border: none; color: white; font-weight: bold; border-radius: 0; }
             .tab-btn.active { background: #1abc9c; }
@@ -63,7 +58,6 @@
             #chat-box-container { display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
             #no-chat-selected { flex-grow: 1; display: flex; align-items: center; justify-content: center; color: #7f8c8d; font-size: 16px; text-align: center; background: #fafafa; border: 2px dashed #bdc3c7; border-radius: 8px; }
             
-            /* ইউনিক মডার্ন চ্যাট বক্স ডিজাইন */
             #chat-box { 
                 flex-grow: 1; 
                 border: 1px solid #dcdde1; 
@@ -77,6 +71,90 @@
                 min-height: 0; 
             }
             
+            /* একাধিক ছবি পাশাপাশি প্রিভিউ করার বক্স */
+            #file-preview-container {
+                display: none;
+                gap: 12px;
+                background: #fff;
+                padding: 12px;
+                border-radius: 10px;
+                margin-bottom: 8px;
+                border: 1px solid #ddd;
+                overflow-x: auto;
+                align-items: center;
+                max-height: 140px;
+            }
+            .preview-thumb-wrapper {
+                position: relative;
+                flex-shrink: 0;
+                width: 90px;
+                height: 90px;
+                background: #f1f2f6;
+                border-radius: 8px;
+                border: 1px solid #ced6e0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+            }
+            .preview-thumb-wrapper img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                border-radius: 6px;
+                border: 1px solid #ccc;
+            }
+            .remove-thumb-btn {
+                position: absolute;
+                top: -5px;
+                right: -5px;
+                background: #e74c3c;
+                color: white;
+                border: none;
+                border-radius: 50%;
+                width: 22px;
+                height: 22px;
+                font-size: 11px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+
+            /* ভয়েস রেকর্ডিং ইউআই (ওয়েভফর্ম ও টাইমার সহ) */
+            #voice-record-bar {
+                display: none;
+                flex-grow: 1;
+                align-items: center;
+                justify-content: space-between;
+                background: #fff;
+                padding: 8px 15px;
+                border-radius: 20px;
+                border: 1px solid #e74c3c;
+            }
+            .waveform-animation {
+                display: flex;
+                align-items: center;
+                gap: 3px;
+                height: 20px;
+            }
+            .waveform-bar {
+                width: 3px;
+                background: #e74c3c;
+                animation: pulseWave 0.8s infinite ease-in-out alternate;
+                border-radius: 2px;
+            }
+            .waveform-bar:nth-child(2) { animation-delay: 0.2s; }
+            .waveform-bar:nth-child(3) { animation-delay: 0.4s; }
+            .waveform-bar:nth-child(4) { animation-delay: 0.1s; }
+            .waveform-bar:nth-child(5) { animation-delay: 0.3s; }
+
+            @keyframes pulseWave {
+                0% { height: 5px; }
+                100% { height: 22px; }
+            }
+
             #form { display: flex; flex-direction: column; gap: 5px; }
             #input { flex-grow: 1; resize: none; min-height: 40px; max-height: 100px; padding: 10px 14px; border-radius: 20px; border: 1px solid #ccc; outline: none; font-family: inherit; font-size: 14px; }
 
@@ -85,68 +163,29 @@
             .news-card h4 { margin: 0 0 5px 0; color: #2c3e50; }
             .news-card a { color: #007bff; text-decoration: none; font-size: 14px; font-weight: bold; }
             
-            /* প্রোফাইল মডাল ও ইমেজ জুম প্রিভিউ */
             #profile-modal, #image-zoom-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; justify-content: center; align-items: center; }
             .profile-card { background: white; width: 320px; padding: 20px; border-radius: 10px; text-align: center; position: relative; }
             .profile-card img { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 3px solid #1abc9c; cursor: pointer; }
             .close-modal { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #7f8c8d; }
 
-            /* কল স্ক্রিন ও ভিডিও মিররিং ফিক্স */
             #call-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 5000; flex-direction: column; align-items: center; justify-content: center; color: white; padding: 15px; }
             .video-container { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; width: 100%; }
             video { width: 320px; max-width: 90vw; height: 240px; background: #222; border-radius: 10px; object-fit: cover; border: 2px solid #34495e; }
             #local-video { transform: scaleX(-1); }
 
-            /* হোয়াটসঅ্যাপ/ইমো স্টাইল ওপর থেকে নিচে স্লাইড অ্যানিমেশন */
             @keyframes slideDown {
                 from { transform: translateY(-100%); opacity: 0; }
                 to { transform: translateY(0); opacity: 1; }
             }
 
-            /* মোবাইল রেসপন্সিভ লেআউট */
             @media (max-width: 768px) {
-                /* মোবাইলে সাইডবারই ডিফল্ট হোম স্ক্রিন হিসেবে ফুল স্ক্রিন থাকবে */
-                #sidebar { 
-                    position: fixed; 
-                    top: 0; 
-                    left: 0; 
-                    width: 100%; 
-                    height: 100dvh; 
-                    z-index: 2000; 
-                    transition: transform 0.3s ease; 
-                }
-
-                /* চ্যাট বা নিউজ ওপেন করলে সাইডবার সরে যাবে */
-                #sidebar.hide-mobile {
-                    transform: translateX(-100%);
-                }
-
-                /* প্রোফাইলের পাশের মোবাইল নেভবার শো করবে, ডেস্কটপ নেভবার হাইড হবে */
+                #sidebar { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; z-index: 2000; transition: transform 0.3s ease; }
+                #sidebar.hide-mobile { transform: translateX(-100%); }
                 .mobile-nav-tabs { display: flex; }
                 .desktop-navbar-tabs, .desktop-brand-bar { display: none !important; }
-
-                /* মোবাইলে ডিফল্টভাবে মেইন কন্টেইনার হাইড থাকবে, শুধু অ্যাক্টিভ হলে ওপর থেকে নিচে স্লাইড হয়ে খুলবে */
-                .chat-main { 
-                    display: none; 
-                    width: 100%; 
-                    height: 100dvh; 
-                    position: fixed; 
-                    top: 0; 
-                    left: 0; 
-                    background: #f9f6a9; 
-                    z-index: 2001; 
-                    padding: 10px; 
-                }
-                
-                .chat-main.mobile-active { 
-                    display: flex; 
-                    animation: slideDown 0.28s ease-out forwards;
-                }
-
-                /* মোবাইলে নিউজ পোর্টালের ভেতরে ব্যাক বাটন হেডার */
-                .mobile-news-header {
-                    display: flex !important;
-                }
+                .chat-main { display: none; width: 100%; height: 100dvh; position: fixed; top: 0; left: 0; background: #f9f6a9; z-index: 2001; padding: 10px; }
+                .chat-main.mobile-active { display: flex; animation: slideDown 0.28s ease-out forwards; }
+                .mobile-news-header { display: flex !important; }
             }
         </style>
     </head>
@@ -170,10 +209,8 @@
         </div>
 
         <div id="chat-layout" class="hidden">
-            <!-- সাইডবার (মোবাইলে এটিই হোম পেজ হিসেবে থাকবে) -->
             <div id="sidebar">
                 <div class="sidebar-header">
-                    <!-- নিজের প্রোফাইল বাটন -->
                     <div class="profile-trigger" id="open-profile-btn">
                         <div class="profile-avatar-sm"
                             id="sidebar-my-avatar">U</div>
@@ -181,7 +218,6 @@
                             style="font-size: 13px; font-weight: bold; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Profile</span>
                     </div>
 
-                    <!-- মোবাইলে প্রোফাইলের পাশেই নেভবার (Chat & News) -->
                     <div class="mobile-nav-tabs">
                         <button type="button" class="mobile-tab-btn active"
                             id="mob-tab-chat" onclick="handleMobileTab('chat')">
@@ -209,9 +245,7 @@
                     Tap a friend to start chatting</div>
             </div>
 
-            <!-- মেইন চ্যাট ও নিউজ ভিউ -->
             <div class="chat-main" id="chat-main-container">
-                <!-- ডেস্কটপের জন্য টপ নেভবার ট্যাব -->
                 <div class="desktop-navbar-tabs">
                     <button type="button" class="tab-btn active"
                         id="desk-tab-chat" onclick="switchTab('chat')"><i
@@ -229,7 +263,6 @@
                         <b id="user-display"></b></span>
                 </div>
 
-                <!-- চ্যাট ট্যাব কন্টেন্ট (এখানে ঢুকলে মোবাইলের নেভবার হাইড থাকবে) -->
                 <div id="chat-tab-content" class="tab-content">
                     <div id="no-chat-selected">
                         <div>
@@ -240,7 +273,6 @@
                     </div>
 
                     <div id="chat-box-container" class="hidden">
-                        <!-- চ্যাট হেডার (সেন্ট্রালাইজড ব্যাক বাটন + প্রোফাইল + কল বাটন) -->
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #2c3e50; border-radius: 6px; color: white; margin-bottom: 6px;">
                             <div
@@ -254,22 +286,47 @@
                             </div>
                             <div style="display: flex; gap: 8px;">
                                 <button type="button" id="start-voice-call"
-                                    style="margin:0; padding:8px 12px; background:#27ae60; font-size:20px; width:auto; border-radius:20%;"><i
+                                    style="margin:0; padding:8px 12px; background:#27ae60; font-size:13px; width:auto; border-radius:50%;"><i
                                         class="fa-solid fa-phone"></i></button>
                                 <button type="button" id="start-video-call"
-                                    style="margin:0; padding:8px 12px; background:#2980b9; font-size:20px; width:auto; border-radius:20%;"><i
+                                    style="margin:0; padding:8px 12px; background:#2980b9; font-size:13px; width:auto; border-radius:50%;"><i
                                         class="fa-solid fa-video"></i></button>
                             </div>
                         </div>
 
                         <div id="chat-box"></div>
 
+                        <!-- একাধিক ছবি প্রিভিউ কন্টেইনার -->
+                        <div id="file-preview-container"></div>
+
                         <form id="form">
                             <div
                                 style="display: flex; gap: 8px; align-items: flex-end; width: 100%;">
                                 <textarea id="input"
-                                    placeholder="Type a message..." rows="1"
-                                    required></textarea>
+                                    placeholder="Type a message..."
+                                    rows="1"></textarea>
+
+                                <!-- ভয়েস রেকর্ডিং চলাকালীন ভিজ্যুয়াল বার -->
+                                <div id="voice-record-bar">
+                                    <div
+                                        style="display: flex; align-items: center; gap: 8px; color: #e74c3c; font-weight: bold; font-size: 13px;">
+                                        <i
+                                            class="fa-solid fa-microphone fa-bounce"></i>
+                                        <span id="record-timer">00:00</span>
+                                    </div>
+                                    <div class="waveform-animation">
+                                        <div class="waveform-bar"></div>
+                                        <div class="waveform-bar"></div>
+                                        <div class="waveform-bar"></div>
+                                        <div class="waveform-bar"></div>
+                                        <div class="waveform-bar"></div>
+                                    </div>
+                                    <button type="button"
+                                        onclick="cancelVoiceRecording()"
+                                        style="background: none; border: none; color: #7f8c8d; font-size: 16px; width: auto; padding: 0; margin: 0;"><i
+                                            class="fa-solid fa-trash"></i></button>
+                                </div>
+
                                 <button type="button" id="mic-btn"
                                     title="Record Voice"
                                     style="width: 40px; height: 40px; background: #e67e22; border-radius: 50%; margin: 0; cursor: pointer; flex-shrink: 0;"><i
@@ -277,10 +334,11 @@
                                 <label
                                     style="background: #2c3e50; color: white; padding: 10px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; margin: 0; flex-shrink: 0;">
                                     <i class="fa-solid fa-paperclip"></i>
-                                    <input type="file" id="file-input"
+                                    <input type="file" id="file-input" multiple
+                                        accept="image/*"
                                         style="display: none;" />
                                 </label>
-                                <button type="submit"
+                                <button type="submit" id="send-btn"
                                     style="width: 42px; height: 40px; border-radius: 50%; background: #1abc9c; margin: 0; flex-shrink: 0;"><i
                                         class="fa-solid fa-paper-plane"></i></button>
                             </div>
@@ -288,10 +346,8 @@
                     </div>
                 </div>
 
-                <!-- নিউজ ট্যাব কন্টেন্ট -->
                 <div id="news-tab-content" class="tab-content hidden">
                     <div class="news-container">
-                        <!-- মোবাইলে নিউজ থেকে হোমে (চ্যাট লিস্টে) ফেরার হেডার -->
                         <div class="mobile-news-header"
                             style="display: none; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #eee;">
                             <button type="button"
@@ -336,7 +392,6 @@
             </div>
         </div>
 
-        <!-- প্রোফাইল সেটিংস মডাল -->
         <div id="profile-modal">
             <div class="profile-card">
                 <span class="close-modal" id="close-profile-btn">&times;</span>
@@ -359,13 +414,11 @@
             </div>
         </div>
 
-        <!-- ইমেজ জুম মডাল (প্রোফাইল পিক বড় করে দেখার জন্য) -->
         <div id="image-zoom-modal" onclick="this.style.display='none'">
             <img id="zoomed-img" src
                 style="max-width: 90%; max-height: 90vh; border-radius: 8px; border: 2px solid white;" />
         </div>
 
-        <!-- কল স্ক্রিন ও কল ডিউরেশন টাইমার -->
         <div id="call-screen">
             <h2 id="call-status-msg" style="margin-bottom: 5px;">Calling...</h2>
             <div id="call-timer"
@@ -429,16 +482,26 @@
         let activeChatUser = null;
         let callTimerInterval = null;
         let callSeconds = 0;
+        let activeRingAudio = null;
 
-        // নোটিফিকেশন ও রিংটোন সাউন্ড ফাংশন
         function playSound(type) {
+            stopSound();
             let audioUrl = '';
             if (type === 'ring') audioUrl = 'https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3';
             else if (type === 'msg') audioUrl = 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3';
             
             if (audioUrl) {
-                const audio = new Audio(audioUrl);
-                audio.play().catch(e => console.log('Audio play error:', e));
+                activeRingAudio = new Audio(audioUrl);
+                activeRingAudio.loop = true;
+                activeRingAudio.play().catch(e => console.log('Audio play error:', e));
+            }
+        }
+
+        function stopSound() {
+            if (activeRingAudio) {
+                activeRingAudio.pause();
+                activeRingAudio.currentTime = 0;
+                activeRingAudio = null;
             }
         }
 
@@ -525,18 +588,21 @@
             const newPhone = updatePhoneInput.value.trim();
             let picUrl = localStorage.getItem('profilePic') || '';
 
+            profileMsg.textContent = 'Saving changes...';
+
             if (updatePicInput.files[0]) {
                 const formData = new FormData();
                 formData.append('file', updatePicInput.files[0]);
                 const res = await fetch('/api/upload', { method: 'POST', body: formData });
                 const data = await res.json();
-                picUrl = data.fileUrl;
-                localStorage.setItem('profilePic', picUrl);
+                if (data.fileUrl) {
+                    picUrl = data.fileUrl;
+                    localStorage.setItem('profilePic', picUrl);
+                }
             }
 
-            // সার্ভারে প্রোফাইল তথ্য আপডেট করা
             try {
-                await fetch('/api/user/update', {
+                const response = await fetch('/api/user/update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -546,21 +612,26 @@
                         newProfilePic: picUrl
                     })
                 });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message || 'Update failed');
+
                 localStorage.setItem('username', newName);
                 localStorage.setItem('phone', newPhone);
-            } catch (e) { console.log('Update error:', e); }
 
-            profileMsg.textContent = 'Profile updated successfully! 🎉';
-            sidebarMyName.textContent = newName;
-            userDisplay.textContent = newName;
-            if(picUrl) {
-                sidebarMyAvatar.innerHTML = `<img src="${picUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" />`;
-                profileAvatarLg.innerHTML = `<img src="${picUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover; cursor:pointer;" onclick="zoomImage('${picUrl}')" />`;
+                profileMsg.textContent = 'Profile updated successfully! 🎉';
+                sidebarMyName.textContent = newName;
+                userDisplay.textContent = newName;
+                if(picUrl) {
+                    sidebarMyAvatar.innerHTML = `<img src="${picUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;" />`;
+                    profileAvatarLg.innerHTML = `<img src="${picUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover; cursor:pointer;" onclick="zoomImage('${picUrl}')" />`;
+                }
+                setTimeout(() => { profileModal.style.display = 'none'; profileMsg.textContent = ''; }, 1500);
+            } catch (err) {
+                profileMsg.style.color = '#e74c3c';
+                profileMsg.textContent = err.message;
             }
-            setTimeout(() => { profileModal.style.display = 'none'; profileMsg.textContent = ''; }, 1500);
         };
 
-        // ডেস্কটপ ট্যাব সুইচিং
         function switchTab(tab) {
             const chatTab = document.getElementById('chat-tab-content');
             const newsTab = document.getElementById('news-tab-content');
@@ -578,7 +649,6 @@
             }
         }
 
-        // মোবাইল নেভবার ট্যাব হ্যান্ডলার (Chat হোম হিসেবে থাকবে, News এ ক্লিক করলে নিউজ খুলবে)
         function handleMobileTab(tab) {
             const mobChatBtn = document.getElementById('mob-tab-chat');
             const mobNewsBtn = document.getElementById('mob-tab-news');
@@ -589,13 +659,11 @@
             mobNewsBtn.classList.remove('active');
 
             if (tab === 'chat') {
-                // চ্যাট অপশনে ক্লিক করলে হোম স্ক্রিন (ফ্রেন্ড লিস্ট) দেখাবে
                 mobChatBtn.classList.add('active');
                 sidebar.classList.remove('hide-mobile');
                 chatMainContainer.classList.remove('mobile-active');
                 activeChatUser = null;
             } else if (tab === 'news') {
-                // নিউজ অপশনে ক্লিক করলে সাইডবার সরে গিয়ে নিউজ পোর্টাল ওপেন হবে
                 mobNewsBtn.classList.add('active');
                 sidebar.classList.add('hide-mobile');
                 chatTab.classList.add('hidden');
@@ -604,12 +672,50 @@
             }
         }
 
+        // একাধিক ছবি সিলেক্ট করার হ্যান্ডলার (কোনো নাম ছাড়া শুধু প্রিভিউ দেখাবে)
+        const fileInput = document.getElementById('file-input');
+        const filePreviewContainer = document.getElementById('file-preview-container');
+        let selectedFiles = [];
+
+        fileInput.addEventListener('change', () => {
+            const files = Array.from(fileInput.files);
+            selectedFiles = selectedFiles.concat(files);
+            renderFilePreviews();
+            fileInput.value = ''; // রিসেট
+        });
+
+        function renderFilePreviews() {
+            filePreviewContainer.innerHTML = '';
+            if (selectedFiles.length > 0) {
+                filePreviewContainer.style.display = 'flex';
+                selectedFiles.forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'preview-thumb-wrapper';
+                        wrapper.innerHTML = `
+                            <img src="${e.target.result}" />
+                            <button type="button" class="remove-thumb-btn" onclick="removeSelectedFile(${index})">&times;</button>
+                        `;
+                        filePreviewContainer.appendChild(wrapper);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            } else {
+                filePreviewContainer.style.display = 'none';
+            }
+        }
+
+        function removeSelectedFile(index) {
+            selectedFiles.splice(index, 1);
+            renderFilePreviews();
+        }
+
         function initSocketChat(username) {
             const form = document.getElementById('form');
             const input = document.getElementById('input');
             const chatBox = document.getElementById('chat-box');
             const userList = document.getElementById('user-list');
-            const fileInput = document.getElementById('file-input');
             const searchPhoneInput = document.getElementById('search-phone-input');
             const addFriendBtn = document.getElementById('add-friend-btn');
             const friendMsg = document.getElementById('friend-msg');
@@ -642,7 +748,6 @@
                 setTimeout(() => { friendMsg.textContent = ''; }, 4000);
             });
 
-            // চ্যাটবক্স থেকে ব্যাক বাটনে ক্লিক করলে মোবাইলে আবার হোম স্ক্রিন (ফ্রেন্ড লিস্ট + নেভবার) ফিরে আসবে
             if (backBtn) {
                 backBtn.onclick = () => {
                     sidebar.classList.remove('hide-mobile');
@@ -688,7 +793,6 @@
                     li.addEventListener('click', () => {
                         activeChatUser = friendObj.username;
                         
-                        // চ্যাট ট্যাব ভিউ নিশ্চিত করা
                         document.getElementById('chat-tab-content').classList.remove('hidden');
                         document.getElementById('news-tab-content').classList.add('hidden');
                         noChatSelected.classList.add('hidden');
@@ -712,7 +816,6 @@
                         chatBox.innerHTML = '';
                         socket.emit('load_old_messages', { user1: username, user2: activeChatUser });
 
-                        // মোবাইলে ফ্রেন্ডের চ্যাটে ঢুকলে সাইডবার (নেভবারসহ) হাইড হয়ে যাবে এবং চ্যাট উইন্ডো স্লাইড-ডাউন হয়ে খুলবে
                         if (window.innerWidth <= 768) {
                             sidebar.classList.add('hide-mobile');
                             chatMainContainer.classList.add('mobile-active');
@@ -733,32 +836,33 @@
                 chatBox.scrollTop = chatBox.scrollHeight;
             });
 
+            // মেসেজ ফর্ম সাবমিট (কোনো টেক্সট না লিখে শুধু ছবি পাঠানো বা টেক্সট সহ পাঠানো)
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 if (!activeChatUser) return;
 
                 const textVal = input.value.trim();
-                const fileVal = fileInput.files[0];
 
-                if (fileVal) {
-                    const formData = new FormData();
-                    formData.append('file', fileVal);
-                    const res = await fetch('/api/upload', { method: 'POST', body: formData });
-                    const data = await res.json();
+                if (selectedFiles.length > 0) {
+                    for (let file of selectedFiles) {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                        const data = await res.json();
 
-                    let fileTypeMsg = 'file';
-                    if (data.fileType.startsWith('image/')) fileTypeMsg = '📷 Image';
-                    else if (data.fileType.startsWith('video/')) fileTypeMsg = '📹 Video';
+                        socket.emit('chat message', {
+                            sender: username,
+                            receiver: activeChatUser,
+                            text: '', // কোনো ফাইলের নাম বা টেক্সট থাকবে না
+                            fileUrl: data.fileUrl,
+                            fileType: data.fileType
+                        });
+                    }
+                    selectedFiles = [];
+                    renderFilePreviews();
+                }
 
-                    socket.emit('chat message', {
-                        sender: username,
-                        receiver: activeChatUser,
-                        text: textVal || fileTypeMsg,
-                        fileUrl: data.fileUrl,
-                        fileType: data.fileType
-                    });
-                    fileInput.value = '';
-                } else if (textVal !== '') {
+                if (textVal !== '') {
                     socket.emit('chat message', { 
                         sender: username, 
                         receiver: activeChatUser, 
@@ -768,44 +872,98 @@
                 input.value = '';
             });
 
+            // নতুন ভয়েস রেকর্ডিং সিস্টেম (টাইমার ও ওয়েভফর্ম সহ)
             let mediaRecorder;
             let audioChunks = [];
             let isRecording = false;
+            let recordInterval;
+            let recordSeconds = 0;
+            
             const micBtn = document.getElementById('mic-btn');
+            const sendBtn = document.getElementById('send-btn');
+            const voiceRecordBar = document.getElementById('voice-record-bar');
+            const recordTimer = document.getElementById('record-timer');
+
+            window.cancelVoiceRecording = () => {
+                if (mediaRecorder && isRecording) {
+                    mediaRecorder.stop();
+                    isRecording = false;
+                    clearInterval(recordInterval);
+                    voiceRecordBar.style.display = 'none';
+                    input.style.display = 'block';
+                    micBtn.style.background = '#e67e22';
+                    audioChunks = [];
+                }
+            };
 
             micBtn.onclick = async () => {
                 if (!activeChatUser) { alert('আগে চ্যাট ওপেন করুন!'); return; }
+                
                 if (!isRecording) {
                     try {
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                         mediaRecorder = new MediaRecorder(stream);
                         audioChunks = [];
+                        
                         mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                        
                         mediaRecorder.onstop = async () => {
-                            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                            const formData = new FormData();
-                            formData.append('file', audioBlob, 'voice-note.webm');
-                            const res = await fetch('/api/upload', { method: 'POST', body: formData });
-                            const data = await res.json();
+                            if (audioChunks.length > 0) {
+                                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                                const formData = new FormData();
+                                formData.append('file', audioBlob, 'voice-note.webm');
+                                const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                                const data = await res.json();
 
-                            socket.emit('chat message', {
-                                sender: username,
-                                receiver: activeChatUser,
-                                text: '🎤 Voice Message',
-                                fileUrl: data.fileUrl,
-                                fileType: 'audio/webm'
-                            });
+                                socket.emit('chat message', {
+                                    sender: username,
+                                    receiver: activeChatUser,
+                                    text: '🎤 Voice Message',
+                                    fileUrl: data.fileUrl,
+                                    fileType: 'audio/webm'
+                                });
+                            }
                         };
+
                         mediaRecorder.start();
                         isRecording = true;
-                        micBtn.style.background = '#c0392b';
-                        micBtn.innerHTML = '<i class="fa-solid fa-stop"></i>';
+                        recordSeconds = 0;
+                        recordTimer.textContent = "00:00";
+                        
+                        // ইনপুট বক্স লুকিয়ে রেকর্ডিং বার দেখানো
+                        input.style.display = 'none';
+                        voiceRecordBar.style.display = 'flex';
+                        micBtn.style.background = '#e74c3c'; // রেকর্ড চলাকালীন মাইক লাল দেখাবে
+
+                        recordInterval = setInterval(() => {
+                            recordSeconds++;
+                            let mins = Math.floor(recordSeconds / 60).toString().padStart(2, '0');
+                            let secs = (recordSeconds % 60).toString().padStart(2, '0');
+                            recordTimer.textContent = `${mins}:${secs}`;
+                        }, 1000);
+
                     } catch (err) { alert('মাইক্রোফোন পার্মিশন পাওয়া যায়নি!'); }
                 } else {
+                    // আবার মাইক বা সেন্ড বাটনে ক্লিক করলে রেকর্ডিং স্টপ হয়ে সেন্ড হয়ে যাবে
                     mediaRecorder.stop();
                     isRecording = false;
+                    clearInterval(recordInterval);
+                    voiceRecordBar.style.display = 'none';
+                    input.style.display = 'block';
                     micBtn.style.background = '#e67e22';
-                    micBtn.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+                }
+            };
+
+            // সেন্ড বাটনে ক্লিক করুলেও যদি ভয়েস রেকর্ড চলতে থাকে তবে তা থামিয়ে সেন্ড করে দিবে
+            sendBtn.onclick = (e) => {
+                if (isRecording) {
+                    e.preventDefault();
+                    mediaRecorder.stop();
+                    isRecording = false;
+                    clearInterval(recordInterval);
+                    voiceRecordBar.style.display = 'none';
+                    input.style.display = 'block';
+                    micBtn.style.background = '#e67e22';
                 }
             };
 
@@ -892,6 +1050,7 @@
                 acceptCallBtn.onclick = async () => {
                     acceptCallBtn.classList.add('hidden');
                     callStatusMsg.textContent = `Connected with ${from}`;
+                    stopSound();
                     startCallTimer();
 
                     localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: isVideo });
@@ -915,6 +1074,7 @@
             socket.on('call_answered', async ({ answer }) => {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
                 callStatusMsg.textContent = `Connected!`;
+                stopSound();
                 startCallTimer();
             });
 
@@ -927,6 +1087,7 @@
                 if (peerConnection) peerConnection.close();
                 peerConnection = null;
                 stopCallTimer();
+                stopSound();
                 callScreen.style.display = 'none';
                 acceptCallBtn.classList.add('hidden');
             }
@@ -960,9 +1121,12 @@
                 }
             }
 
+            // যদি শুধু ছবি হয় এবং কোনো টেক্সট না থাকে, তবে শুধু ছবি দেখাবে
+            let textDisplay = msg.text ? `<p style="margin: 0; word-break: break-word; font-size: 14px; color: #2c3e50;">${msg.text}</p>` : '';
+
             msgDiv.innerHTML = `
-                <div style="background: ${isMe ? '#dcf8c6' : '#fff'}; padding: 10px 14px; border-radius: 12px; max-width: 70%; box-shadow: 0 1px 2px rgba(0,0,0,0.12); position:relative;">
-                    <p style="margin: 0; word-break: break-word; font-size: 14px; color: #2c3e50;">${msg.text || ''}</p>
+                <div style="background: ${isMe ? '#dcf8c6' : '#fff'}; padding: ${msg.text ? '10px 14px' : '5px'}; border-radius: 12px; max-width: 70%; box-shadow: 0 1px 2px rgba(0,0,0,0.12); position:relative;">
+                    ${textDisplay}
                     ${fileContent}
                 </div>
             `;
