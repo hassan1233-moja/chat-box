@@ -41,7 +41,7 @@ exports.login = async (req, res) => {
         // ডাটাবেসে ইমেইলটি খোঁজা
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).json({ message: 'ভুল ইমেইল বা পাসওয়ার্ড!' });
+            return res.status(400).json({ message: 'User not found!' });
         }
 
         // ইউজার যে পাসওয়ার্ড দিয়েছে তা ডাটাবেসের হ্যাশ করা পাসওয়ার্ডের সাথে মিলে কি না চেক করা

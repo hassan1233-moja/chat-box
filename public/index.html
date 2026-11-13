@@ -487,12 +487,22 @@
         function playSound(type) {
             stopSound();
             let audioUrl = '';
-            if (type === 'ring') audioUrl = 'https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3';
-            else if (type === 'msg') audioUrl = 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3';
+            if (type === 'ring') {
+                audioUrl = 'https://assets.mixkit.co/active_storage/sfx/1359/1359-preview.mp3';
+            } else if (type === 'msg') {
+                audioUrl = 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3';
+            }
             
             if (audioUrl) {
                 activeRingAudio = new Audio(audioUrl);
-                activeRingAudio.loop = true;
+                if (type === 'ring') {
+                    activeRingAudio.loop = true; // কল রিংটোন বারবার বাজবে যতক্ষণ রিসিভ বা কাটা না হয়
+                } else {
+                    activeRingAudio.loop = false; // মেসেজ টোন শুধু একবার বাজবে এবং শেষ হলে ক্লিয়ার হয়ে যাবে
+                    activeRingAudio.onended = () => {
+                        activeRingAudio = null;
+                    };
+                }
                 activeRingAudio.play().catch(e => console.log('Audio play error:', e));
             }
         }
@@ -672,7 +682,6 @@
             }
         }
 
-        // একাধিক ছবি সিলেক্ট করার হ্যান্ডলার (কোনো নাম ছাড়া শুধু প্রিভিউ দেখাবে)
         const fileInput = document.getElementById('file-input');
         const filePreviewContainer = document.getElementById('file-preview-container');
         let selectedFiles = [];
@@ -681,7 +690,7 @@
             const files = Array.from(fileInput.files);
             selectedFiles = selectedFiles.concat(files);
             renderFilePreviews();
-            fileInput.value = ''; // রিসেট
+            fileInput.value = '';
         });
 
         function renderFilePreviews() {
@@ -836,7 +845,6 @@
                 chatBox.scrollTop = chatBox.scrollHeight;
             });
 
-            // মেসেজ ফর্ম সাবমিট (কোনো টেক্সট না লিখে শুধু ছবি পাঠানো বা টেক্সট সহ পাঠানো)
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 if (!activeChatUser) return;
@@ -853,7 +861,7 @@
                         socket.emit('chat message', {
                             sender: username,
                             receiver: activeChatUser,
-                            text: '', // কোনো ফাইলের নাম বা টেক্সট থাকবে না
+                            text: '',
                             fileUrl: data.fileUrl,
                             fileType: data.fileType
                         });
@@ -872,7 +880,6 @@
                 input.value = '';
             });
 
-            // নতুন ভয়েস রেকর্ডিং সিস্টেম (টাইমার ও ওয়েভফর্ম সহ)
             let mediaRecorder;
             let audioChunks = [];
             let isRecording = false;
@@ -930,10 +937,9 @@
                         recordSeconds = 0;
                         recordTimer.textContent = "00:00";
                         
-                        // ইনপুট বক্স লুকিয়ে রেকর্ডিং বার দেখানো
                         input.style.display = 'none';
                         voiceRecordBar.style.display = 'flex';
-                        micBtn.style.background = '#e74c3c'; // রেকর্ড চলাকালীন মাইক লাল দেখাবে
+                        micBtn.style.background = '#e74c3c';
 
                         recordInterval = setInterval(() => {
                             recordSeconds++;
@@ -944,7 +950,6 @@
 
                     } catch (err) { alert('মাইক্রোফোন পার্মিশন পাওয়া যায়নি!'); }
                 } else {
-                    // আবার মাইক বা সেন্ড বাটনে ক্লিক করলে রেকর্ডিং স্টপ হয়ে সেন্ড হয়ে যাবে
                     mediaRecorder.stop();
                     isRecording = false;
                     clearInterval(recordInterval);
@@ -954,7 +959,6 @@
                 }
             };
 
-            // সেন্ড বাটনে ক্লিক করুলেও যদি ভয়েস রেকর্ড চলতে থাকে তবে তা থামিয়ে সেন্ড করে দিবে
             sendBtn.onclick = (e) => {
                 if (isRecording) {
                     e.preventDefault();
@@ -1121,7 +1125,6 @@
                 }
             }
 
-            // যদি শুধু ছবি হয় এবং কোনো টেক্সট না থাকে, তবে শুধু ছবি দেখাবে
             let textDisplay = msg.text ? `<p style="margin: 0; word-break: break-word; font-size: 14px; color: #2c3e50;">${msg.text}</p>` : '';
 
             msgDiv.innerHTML = `
